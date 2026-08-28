@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kasir - Kedai SoYou</title>
+    
+    <meta name="theme-color" content="#4c2c16">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="icon" href="logo soyou.png" type="image/png">
+    <link rel="apple-touch-icon" href="logo soyou.png">
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Kasir%20Kedai%20SoYou%22%2C%22short_name%22%3A%22SoYou%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%234c2c16%22%2C%22theme_color%22%3A%22%23f59e0b%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22logo%20soyou.png%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22logo%20soyou.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+    <style>
+        :root { --primary: #f59e0b; --primary-dark: #d97706; --bg-body: #f5f5f4; --card-bg: #ffffff; --text-main: #292524; --text-muted: #78716c; --border-color: #e7e5e4; --sidebar-bg: #4c2c16; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        html { font-size: 13px; }
+        body { background-color: var(--bg-body); color: var(--text-main); line-height: 1.5; }
+
+        .toast-notif { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #16a34a; color: white; padding: 10px 24px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: 800; font-size: 0.9rem; z-index: 10000; opacity: 0; transition: all 0.3s ease; pointer-events: none; display: flex; align-items: center; gap: 8px; }
+        .toast-notif.show { opacity: 1; top: 70px; }
+
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: linear-gradient(135deg, #4c2c16, #291508); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .login-card { background: white; width: 100%; max-width: 360px; border-radius: 16px; padding: 30px 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .login-logo { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #f59e0b; margin-bottom: 15px; object-fit: cover; }
+        .login-title { font-size: 1.2rem; font-weight: 800; color: #4c2c16; margin-bottom: 2px; }
+        .login-subtitle { font-size: 0.8rem; font-weight: 600; color: #78716c; margin-bottom: 20px; }
+        .login-input { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 2px solid #e7e5e4; border-radius: 10px; font-size: 0.9rem; outline: none; background: #fafaf9; text-align: center;}
+        .login-input:focus { border-color: #f59e0b; background: #fff; }
+        .btn-login { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 1rem; cursor: pointer;}
+        
+        #appScreen { display: none; padding: 8px; padding-top: 55px; }
+        @media (min-width: 640px) { #appScreen { padding: 16px; padding-top: 70px; } }
+        
+        .mobile-header { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: rgba(76, 44, 22, 0.95); backdrop-filter: blur(12px); color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; z-index: 1000;}
+        .header-left { display: flex; align-items: center; gap: 6px; }
+        .header-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; }
+        .hamburger-btn { background: rgba(255,255,255,0.1); color: white; border: none; font-size: 1.2rem; cursor: pointer; width: 34px; height: 34px; border-radius: 8px;}
+        .header-date { background: rgba(255, 255, 255, 0.15); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; padding: 6px; font-size: 0.75rem; width: 110px; }
+        .btn-lock { border: none; padding: 6px 8px; border-radius: 6px; font-weight: 800; font-size: 0.65rem; cursor: pointer; color: white; }
+        .btn-lock.unlock { background: linear-gradient(135deg, #10b981, #059669); }
+        .btn-lock.locked { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .status-sync { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; transition: all 0.3s;}
+
+        .sidebar { position: fixed; top: 0; left: -100%; width: 85%; max-width: 280px; height: 100%; background: var(--sidebar-bg); color: white; z-index: 1001; transition: all 0.3s; padding: 16px 12px; overflow-y: auto; }
+        .sidebar.active { left: 0; }
+        .sidebar-menu { list-style: none; margin-top:12px; }
+        .sidebar-menu li { margin-bottom: 8px; }
+        .sidebar-menu button { width: 100%; text-align: left; background: rgba(255,255,255,0.05); color: #f5f5f4; border: 1px solid rgba(255,255,255,0.1); padding: 10px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem;}
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(41, 21, 8, 0.6); z-index: 1000; display: none; }
+        .overlay.active { display: block; }
+
+        .kas-card { background: linear-gradient(135deg, #5c361b 0%, #4c2c16 100%); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; margin-bottom: 10px;}
+        .kas-card-modal { background: linear-gradient(135deg, #ca8a04 0%, #a16207 100%); }
+        .kas-card-partner { background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); }
+        .kas-card-owner { background: linear-gradient(135deg, #b45309 0%, #92400e 100%); }
+        .kas-title { font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase;}
+        .kas-val { font-size: 1.3rem; font-weight: 800; margin-bottom: 10px; color: #ffffff;}
+
+        .container { max-width: 1280px; margin: 0 auto; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card h2 { font-size: 1rem; font-weight: 800; margin-bottom: 12px;}
+        .grid-mobile { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .grid-kas-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 640px) { .grid-mobile { grid-template-columns: repeat(2, 1fr); } .grid-kas-cards { grid-template-columns: repeat(3, 1fr); } }
+
+        .form-group { margin-bottom: 8px; }
+        label { display: block; font-size: 0.7rem; font-weight: 700; margin-bottom: 4px; color: var(--text-muted); text-transform: uppercase; }
+        input, select { width: 100%; padding: 8px 10px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 0.85rem;}
+        input:disabled, button:disabled, select:disabled { opacity: 0.6; cursor: not-allowed !important; background-color: #d6d3d1 !important; color: #57534e !important; }
+        
+        .btn { color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.75rem; width: 100%; margin-bottom: 4px; }
+        .btn-success { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .btn-pdf { background: linear-gradient(135deg, #e11d48, #be123c); }
+        .btn-outline { background: transparent; border: 2px solid var(--border-color); color: var(--text-main); }
+
+        .table-wrapper { overflow-x: auto; max-height: 65vh; margin-bottom: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: white; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.7rem; white-space: nowrap; }
+        th, td { border-bottom: 1px solid var(--border-color); padding: 6px 4px; text-align: left; vertical-align: middle; }
+        th { background-color: #fafaf9; font-weight: 800; text-align: center; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #d6d3d1; font-size: 0.65rem; text-transform: uppercase;}
+        
+        .input-stok { width: 38px; padding: 4px 2px; text-align: center; font-weight: 800; font-size: 0.85rem; border-radius: 4px; border: 1px solid #d6d3d1;}
+        .input-pagi { background-color: #fefce8; border-color: #fde047; }
+        .input-malam { background-color: #fafaf9; border-color: #a8a29e; }
+        .input-tambah { background-color: #f0fdf4; border-color: #86efac; }
+        .input-kurang { background-color: #fef2f2; border-color: #fca5a5; }
+
+        .table-freeze th:nth-child(1), .table-freeze td:nth-child(1) { position: sticky; left: 0; z-index: 5; width: 100px; min-width: 100px; max-width: 100px; white-space: normal; background: #fff; vertical-align: top;}
+        .table-freeze th:nth-child(2), .table-freeze td:nth-child(2) { position: sticky; left: 100px; z-index: 5; width: 75px; min-width: 75px; max-width: 75px; white-space: normal; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1); background: #fff; border-right: 1px solid var(--border-color); vertical-align: top;}
+        .table-freeze th:nth-child(1), .table-freeze th:nth-child(2) { z-index: 20; background-color: #fafaf9; top: 0; }
+        .table-freeze tbody tr:hover td { background-color: #fefce8; }
+
+        .summary-box { background: #fffbeb; border-radius: 12px; padding: 12px; margin-top: 6px; border: 1px solid #fde68a; }
+        .summary-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.8rem; }
+        .summary-item.bold { font-weight: 800; border-top: 1px dashed #d6d3d1; padding-top: 8px; font-size: 0.9rem; }
+
+        .modal { display: none; position: fixed; z-index: 2000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(41, 21, 8, 0.75); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 12px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 16px; border-radius: 16px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; }
+
+        .tab-container { display: flex; gap: 6px; overflow-x: auto; border-bottom: 2px solid var(--border-color); margin-bottom: 12px; padding-bottom: 6px; }
+        .tab-btn { background: #f5f5f4; color: var(--text-muted); border: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 0.75rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;}
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .chart-container { position: relative; height: 250px; width: 100%; margin: 0 auto; }
+
+        .pdf-area-container { display: none; background: #fff; padding: 20px; color: #292524; font-family: sans-serif; }
+        .kop-surat { display: flex; align-items: center; justify-content: center; gap: 15px; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+        .kop-surat img { width: 55px; height: 55px; border-radius: 50%; border: 2px solid #f59e0b; object-fit: cover; }
+        .kop-surat-text { text-align: left; }
+        .kop-surat h1 { margin: 0; font-size: 1.5rem; color: #000; text-transform: uppercase; font-weight: 900;}
+        .kop-surat p { margin: 2px 0 0 0; font-size: 1rem; font-weight: bold; color: #57534e; }
+        .pdf-header { text-align: center; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 2px solid #f59e0b;}
+        .pdf-header h2 { font-size: 1.2rem; color: #4c2c16; text-transform: uppercase; font-weight: 800;}
+        .pdf-section-title { font-size: 0.95rem; font-weight: 800; color: #292524; background: #f5f5f4; padding: 6px 10px; margin: 12px 0 8px 0; border-left: 4px solid #f59e0b; border-radius: 0 6px 6px 0; }
+        .pdf-box { border: 1px solid #d6d3d1; border-radius: 8px; padding: 10px; background: #fafaf9; margin-bottom: 10px; }
+        .pdf-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.85rem; border-bottom: 1px dashed #e7e5e4; }
+        .pdf-row.total { font-weight: 800; font-size: 0.95rem; border-bottom: 2px solid #4c2c16; border-top: 1.5px solid #4c2c16; margin-top: 6px; padding: 6px 0; }
+        .pdf-area-container table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .pdf-area-container th, .pdf-area-container td { border: 1px solid #d6d3d1; padding: 6px; text-align: left; }
+        .pdf-area-container th { background: #f5f5f4; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="toastNotif" class="toast-notif">✅ Tersimpan!</div>
+
+<div id="loginScreen">
+    <div class="login-card">
+        <img src="logo soyou.png" alt="Logo Kedai SoYou" class="login-logo">
+        <h1 class="login-title">Aplikasi Kasir</h1>
+        <p class="login-subtitle">Kedai SoYou</p>
+        <form onsubmit="prosesLogin(event)">
+            <input type="tel" id="inLoginHp" class="login-input" placeholder="Nomor Handphone (08...)" required autocomplete="off">
+            <input type="password" id="inLoginPass" class="login-input" placeholder="Kata Sandi / Password" required>
+            <button type="submit" class="btn-login" id="btnLoginBtn">MASUK</button>
+        </form>
+    </div>
+</div>
+
+<div id="appScreen">
+    <div class="mobile-header">
+        <div class="header-left">
+            <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+            <input type="date" id="tglOps" class="header-date" onchange="loadDataTanggalLocal()">
+            <button id="btnToggleLock" class="btn-lock unlock" onclick="toggleLock()">🔓 BUKA</button>
+        </div>
+        <div class="header-right">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px; cursor: pointer;" onclick="window.location.reload();" title="Refresh">
+                <img src="logo soyou.png" alt="Logo Kedai SoYou" style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); object-fit: cover;">
+                <span style="font-size: 0.8rem; font-weight:bold;">Kedai SoYou</span>
+            </div>
+            <span class="status-sync" id="statusSyncText">🟢 ONLINE</span>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; border: none; padding: 0;">📌 Navigasi Utama</h3>
+            <button onclick="toggleSidebar()" style="background: rgba(255,255,255,0.1); border: none; color: white; font-size: 1rem; cursor: pointer; width:28px; height:28px; border-radius:6px;">✕</button>
+        </div>
+        <div style="text-align: center; margin: 15px 0;">
+            <img src="logo soyou.png" alt="Logo Besar" style="width: 70px; height: 70px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 2px solid #f59e0b; margin-bottom: 8px;">
+            <div style="font-size: 0.75rem; color: #a8a29e;">Selamat datang,</div>
+            <div id="namaUserAktif" style="font-size: 1rem; font-weight: 800; color: #fafaf9;">-</div>
+            <div id="roleUserAktif" style="font-size: 0.65rem; font-weight: 700; color: #fde047; text-transform: uppercase; background: rgba(253, 224, 71, 0.1); display: inline-block; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">-</div>
+        </div>
+        <ul class="sidebar-menu" style="margin-top: 12px;">
+            <li><button onclick="pilihMenuNav('harian')">📋 Rekap Stok Harian</button></li>
+            
+            <li id="menuOrderVendor"><button onclick="pilihMenuNav('orderVendor')" style="border-left: 4px solid #3b82f6;">📦 Form Order Vendor</button></li>
+            <li id="menuTransfer"><button onclick="pilihMenuNav('rekapTransfer')">🏦 Rekap Transfer Dompet</button></li>
+            <li id="menuMutasi"><button onclick="pilihMenuNav('mutasiKas')" style="border-left: 4px solid #10b981;">💰 Ringkasan & Mutasi Kas</button></li>
+            <li id="menuDashboard"><button onclick="pilihMenuNav('dashboard')" style="border-left: 4px solid #f59e0b;">📈 Dashboard Grafik</button></li>
+            <li id="menuProduk" style="margin-top: 20px;"><button onclick="bukaModalKelolaProduk()">⚙️ Kelola Master Produk</button></li>
+            <li id="menuKelolaAkun"><button onclick="bukaModalKelolaAkun()" style="border-left: 4px solid #ef4444; color: #fca5a5;">👥 Kelola Akun Kasir</button></li>
+            <li id="menuCetak1"><button onclick="bukaModalCetakPeriode('mingguan')">📊 Cetak Rekap Mingguan</button></li>
+            <li id="menuCetak2"><button onclick="bukaModalCetakPeriode('bulanan')">📈 Cetak Rekap Bulanan</button></li>
+            <li style="margin-top: 25px;"><button onclick="prosesLogout()" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); text-align: center;">🚪 Keluar (Logout)</button></li>
+        </ul>
+    </div>
+
+    <div class="container">
+        
+        <div id="viewDashboard" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #f59e0b;">
+                <h2 style="color: #b45309; margin-bottom: 12px;">📈 Dashboard Analisa (7 Hari)</h2>
+                <div class="grid-mobile" style="margin-bottom: 15px;">
+                    <div class="summary-box" style="background:#fff; border-color:#d6d3d1; text-align:center;">
+                        <span style="font-size:0.75rem; font-weight:800; color:#57534e; text-transform:uppercase;">TOTAL OMSET</span>
+                        <div id="dashTotalOmset" style="font-size:1.5rem; font-weight:900; color:#292524; margin:4px 0;">Rp 0</div>
+                    </div>
+                    <div class="summary-box" style="background:#f0fdf4; border-color:#86efac; text-align:center;">
+                        <span style="font-size:0.75rem; font-weight:800; color:#166534; text-transform:uppercase;">TOTAL PROFIT BERSIH</span>
+                        <div id="dashTotalProfit" style="font-size:1.5rem; font-weight:900; color:#15803d; margin:4px 0;">Rp 0</div>
+                        <div style="font-size:0.75rem; color:#16a34a;">*Siap Dibagi Hasil (60:40)</div>
+                    </div>
+                </div>
+                <div class="summary-box" style="background:#fff; border-color:#d6d3d1; margin-bottom: 15px;">
+                    <h4 style="font-size:0.85rem; color:#44403c; margin-bottom:10px; text-align:center; font-weight:800;">TREN OMSET & PROFIT BERSIH</h4>
+                    <div class="chart-container"><canvas id="chartTren"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ORDER VENDOR VIEW -->
+        <div id="viewOrderVendor" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #3b82f6;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <h2 style="color: #1d4ed8; margin:0;">📦 Form Order Vendor</h2>
+                    <button onclick="bukaModalVendor()" class="btn btn-warning" style="width:auto; padding:6px 12px; font-size:0.75rem; border-radius:8px; margin:0;">+ Tambah Produk</button>
+                </div>
+                <div style="font-size: 0.7rem; color: #1e40af; margin-bottom: 12px; font-weight: bold;">
+                    Silakan isi Qty. Harga bisa diedit jika ada perubahan dari supplier.
+                </div>
+                <div class="table-wrapper">
+                    <table class="table-freeze">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">Produk & Kemasan</th>
+                                <th>Vol / Isi</th>
+                                <th>Rasa</th>
+                                <th style="background:#dcfce7; color:#166534;">Qty</th>
+                                <th>Harga/Krt (Edit)</th>
+                                <th>Total</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyOrderVendor"></tbody>
+                    </table>
+                </div>
+                <div class="summary-box" style="background:#eff6ff; border-color:#bfdbfe; margin-top:15px; padding:15px;">
+                    <div class="summary-item bold" style="font-size:1.1rem; color:#1e3a8a; border:none; padding:0; margin:0;">
+                        <span>GRAND TOTAL ORDER:</span>
+                        <span id="txtGrandTotalOrder" style="font-weight:900;">Rp 0</span>
+                    </div>
+                </div>
+                <button onclick="kirimOrderWA()" class="btn btn-success" style="margin-top:12px; padding:12px; font-size:1rem; border-radius:10px; font-weight:800; display:flex; justify-content:center; align-items:center; gap:8px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c.003-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/></svg>
+                    Kirim Order via WA
+                </button>
+            </div>
+        </div>
+
+        <div id="viewHarian" style="display:none;">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <h2 style="margin:0; font-size: 1.1rem; color:#4c2c16;">📋 Entry Stok Harian</h2>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                        <button onclick="document.getElementById('fileImportPagi').click()" class="btn btn-warning" style="width:auto; padding:6px 8px; font-size:0.7rem; margin:0; border-radius:8px; background: #fbbf24; color:#78350f;">📥 Import CSV</button>
+                        <button onclick="downloadTemplatePagi()" class="btn btn-outline" style="width:auto; padding:6px 8px; font-size:0.7rem; margin:0; border-radius:8px; border-color:#d6d3d1; color:#57534e;">📤 Export</button>
+                        <input type="file" id="fileImportPagi" accept=".csv" style="display:none;" onchange="importStokPagi(event)">
+                        <button onclick="generatePDFHarian()" class="btn btn-pdf" style="width:auto; padding:6px 8px; font-size:0.7rem; margin:0; border-radius:8px;">📄 Cetak</button>
+                    </div>
+                </div>
+                <div style="font-size: 0.7rem; color: #047857; margin-bottom: 8px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                    <span>⚡</span> Sistem menyimpan otomatis & real-time saat mengisi nilai.
+                </div>
+                <div class="table-wrapper"><table class="table-freeze"><thead id="theadMatriks"></thead><tbody id="tbodyMatriks"></tbody></table></div>
+            </div>
+
+            <div class="card" id="cardKasir">
+                <h2 style="color:#4c2c16;">💰 Kasir Harian</h2>
+                <div class="grid-mobile">
+                    <div class="form-group"><label>💵 Cash Laci Fisik</label><input type="number" id="inCash" value="0" oninput="updateKalkulasi()" onchange="simpanKasMasuk(true)" placeholder="Fisik Uang Kertas & Koin"></div>
+                    <div class="form-group"><label>📱 QRIS</label><input type="number" id="inQris" value="0" oninput="updateKalkulasi()" onchange="simpanKasMasuk(true)" placeholder="Total Uang Masuk QRIS"></div>
+                </div>
+            </div>
+            
+            <div class="card" id="cardValidasiKasir" style="border-top: 4px solid #3b82f6;">
+                <h2 style="color:#1d4ed8;">⚖️ Validasi Kasir (Omset vs Aktual)</h2>
+                <div class="summary-box" style="background:#eff6ff; border-color:#bfdbfe;">
+                    <div class="summary-item bold"><span>A. Uang Seharusnya (Omset Sistem):</span><span id="txtUangSeharusnya" style="font-weight:800; font-size:0.95rem;">Rp 0</span></div>
+                    <div class="summary-item bold" style="color:#d97706; border-top: 1px dashed #93c5fd; padding-top: 6px; margin-top:4px;"><span>B. Aktual Uang (Cash + QRIS):</span><span id="txtAktualUang" style="font-weight:800; font-size:0.95rem;">Rp 0</span></div>
+                    <div class="summary-item bold" style="border-top: 2px solid #93c5fd; padding-top: 10px; margin-top:8px;"><span>C. SELISIH (B - A):</span><span id="txtSelisih" style="font-size: 1.15rem;">Rp 0</span></div>
+                    <div class="summary-item" id="boxEstimasiEsTeh" style="font-size: 0.75rem; margin-top: 6px; border-top: 1px dashed #93c5fd; padding-top: 6px; display: block; font-weight: 500;"></div>
+                </div>
+            </div>
+
+            <div class="card" id="cardAlokasiHarian" style="margin-bottom: 40px; border-top: 4px solid #10b981;">
+                <h2 style="color:#047857;">📊 Alokasi Keuangan & Bagi Hasil</h2>
+                <div class="grid-mobile">
+                    <div class="summary-box" style="background:#f0fdf4; border-color:#86efac;">
+                        <div class="summary-item" style="color:#b45309; font-weight:700; font-size:0.9rem;">
+                            <span>📦 Uang Modal Belanja (Restock):</span><span id="allocModalBelanja">Rp 0</span>
+                        </div>
+                        <div class="summary-item bold" style="margin-bottom:8px; font-size:1rem; color:#15803d; border-top:2px solid #86efac; padding-top:8px; margin-top:8px;">
+                            <span>TOTAL PROFIT BERSIH:</span><span id="totalProfitBersih">Rp 0</span>
+                        </div>
+                        <div class="summary-item bold" style="color:#0369a1; border-top:1px dashed #4ade80; padding-top:8px; font-size:0.95rem;">
+                            <span>🤝 Hak Partner (40%):</span><span id="allocPartner">Rp 0</span>
+                        </div>
+                        <div class="summary-item bold" style="color:#b45309; font-size:0.95rem; margin-top:4px;">
+                            <span>👑 Hak Anda (60%):</span><span id="allocOwner">Rp 0</span>
+                        </div>
+                        <div style="font-size:0.65rem; color:#dc2626; text-align:right; margin-top:4px; font-weight:600;">
+                            *Porsi Anda (60%) belum dipotong pengeluaran Rp 25.000 (Direkap di PDF Mingguan).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewMutasiKas" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #10b981;">
+                <h2 style="color: #047857; margin-bottom: 16px;">💰 Ringkasan Dompet & Mutasi</h2>
+                <div class="grid-kas-cards">
+                    <div class="kas-card kas-card-modal"><div class="kas-title" style="color:#fef08a;">Dompet Modal Belanja</div><div class="kas-val" id="sbKasModal">Rp 0</div><div style="display:flex; gap:6px;"><button onclick="bukaModalKas('Modal Belanja', 'masuk')" class="btn btn-success" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.4);">+ Saldo</button><button onclick="bukaModalKas('Modal Belanja', 'keluar')" class="btn btn-danger" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.4);">- Tarik</button></div></div>
+                    <div class="kas-card kas-card-partner"><div class="kas-title" style="color:#bae6fd;">Dompet Hak Partner (40%)</div><div class="kas-val" id="sbKasPartner" style="color:#38bdf8;">Rp 0</div><div style="display:flex; gap:6px;"><button onclick="bukaModalKas('Hak Partner', 'masuk')" class="btn btn-success" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">+ Saldo</button><button onclick="bukaModalKas('Hak Partner', 'keluar')" class="btn btn-danger" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">- Tarik</button></div></div>
+                    <div class="kas-card kas-card-owner"><div class="kas-title" style="color:#fde68a;">Dompet Hak Anda (60%)</div><div class="kas-val" id="sbKasOwner" style="color:#fbbf24;">Rp 0</div><div style="display:flex; gap:6px;"><button onclick="bukaModalKas('Hak Owner', 'masuk')" class="btn btn-success" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">+ Saldo</button><button onclick="bukaModalKas('Hak Owner', 'keluar')" class="btn btn-danger" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">- Tarik</button></div></div>
+                </div>
+                <hr style="margin: 20px 0; border: none; border-top: 1px dashed var(--border-color);">
+                <div class="tab-container">
+                    <button class="tab-btn active" onclick="gantiTabKas('Modal Belanja', this)">📦 Modal Belanja</button>
+                    <button class="tab-btn" onclick="gantiTabKas('Hak Partner', this)">🤝 Hak Partner</button>
+                    <button class="tab-btn" onclick="gantiTabKas('Hak Owner', this)">👑 Hak Anda</button>
+                </div>
+                <div style="background: linear-gradient(135deg, #5c361b, #4c2c16); color:white; padding:16px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                    <div><span style="font-size:0.65rem; color:#d6d3d1; text-transform:uppercase; font-weight:800;">Saldo Terkini DOMPET</span><h3 id="txtNamaTabKas" style="font-size:0.95rem; color:#fde047; margin-top:2px;">Kas Modal Belanja</h3></div>
+                    <div id="txtTotalTabKas" style="font-size:1.3rem; font-weight:800; color:#4ade80;">Rp 0</div>
+                </div>
+                <div class="table-wrapper"><table><thead><tr><th>Tgl</th><th>Tipe</th><th>Ket. Tx</th><th>Nominal</th><th>Saldo</th><th>Aksi</th></tr></thead><tbody id="tbodyMutasiKas"></tbody></table></div>
+            </div>
+        </div>
+        
+        <div id="viewRekapTransfer" style="display:none;">
+            <div class="card" style="border-top: 4px solid #f59e0b; margin-bottom: 40px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                    <h2 style="color: #b45309; margin:0;">🏦 Rekap Transfer Dompet</h2>
+                    <button onclick="generatePDFTransfer()" class="btn btn-pdf" style="width:auto; padding:6px 12px; font-size:0.75rem; margin:0; border-radius:12px;">🖨️ Cetak PDF</button>
+                </div>
+                <div class="grid-mobile">
+                    <div class="summary-box" style="background:#fafaf9; border-color:#d6d3d1;">
+                        <h4 style="color:#44403c; font-size:0.85rem; font-weight:800; margin-bottom:10px; text-transform:uppercase;">📥 (A) Rincian Omset Seharusnya</h4>
+                        <div class="summary-item"><span>Alokasi Modal Belanja:</span><strong id="rtKasModal" style="color:#dc2626;">Rp 0</strong></div>
+                        <div class="summary-item"><span>Hak Partner (40%):</span><strong id="rtKasPartner" style="color:#0284c7;">Rp 0</strong></div>
+                        <div class="summary-item"><span>Hak Anda (60%):</span><strong id="rtKasOwner" style="color:#b45309;">Rp 0</strong></div>
+                        <div class="summary-item bold" style="color:#292524; font-size:1.05rem; border-top:2px solid #a8a29e; padding-top:10px; margin-top:10px;"><span>TOTAL OMSET (A):</span><span id="rtTotalA">Rp 0</span></div>
+                    </div>
+                    <div class="summary-box" style="background:#f0fdf4; border-color:#86efac;">
+                        <h4 style="color:#15803d; font-size:0.85rem; font-weight:800; margin-bottom:10px; text-transform:uppercase;">📱 (B) Total Uang Aktual</h4>
+                        <div class="summary-item"><span>💵 Cash Laci Fisik:</span><strong id="rtCash">Rp 0</strong></div>
+                        <div class="summary-item"><span>💳 QRIS:</span><strong id="rtQris">Rp 0</strong></div>
+                        <div class="summary-item bold" style="color:#16a34a; font-size:1.05rem; border-top:2px solid #86efac; padding-top:10px; margin-top:6px;"><span>TOTAL AKTUAL (B):</span><span id="rtTotalB">Rp 0</span></div>
+                    </div>
+                </div>
+                <div id="rtFinalBox" class="summary-box" style="margin-top:16px; text-align:center; padding:20px; transition: all 0.3s;">
+                    <span id="rtFinalLabel" style="font-size:0.85rem; font-weight:800; color:#57534e; text-transform:uppercase; letter-spacing:0.5px;">STATUS BALANCE (AKTUAL B - OMSET A):</span>
+                    <div id="rtFinalValue" style="font-size:2rem; font-weight:800; margin-top:8px; margin-bottom:8px;">Rp 0</div>
+                    <div id="rtFinalKet" style="font-size:0.8rem; font-weight:700; line-height:1.4;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal" id="modalTambahVendor">
+    <div class="modal-content">
+        <h3 style="font-size:1.1rem; font-weight:800; color:#b45309; margin-bottom: 12px;">📦 Tambah Produk Vendor</h3>
+        <form onsubmit="simpanProdukVendorBaru(event)">
+            <div class="form-group"><label>Nama Produk (Cth: Teh Botol):</label><input type="text" id="inVenNama" required></div>
+            <div class="grid-mobile">
+                <div class="form-group"><label>Kemasan (Cth: Pack):</label><input type="text" id="inVenKemasan" required></div>
+                <div class="form-group"><label>Volume/Isi (Cth: 24):</label><input type="text" id="inVenVol" required></div>
+            </div>
+            <div class="grid-mobile">
+                <div class="form-group"><label>Rasa:</label><input type="text" id="inVenRasa" required></div>
+                <div class="form-group"><label>Harga per Karton (Rp):</label><input type="number" id="inVenHarga" required min="0"></div>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:15px;">
+                <button type="button" class="btn btn-danger" onclick="tutupModalVendor()">Batal</button>
+                <button type="submit" class="btn btn-success">Simpan Produk</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="modalKelolaAkun"><div class="modal-content"><h3 style="font-size:1.1rem; font-weight:800; color:#d97706;">👥 Manajemen Akun Karyawan</h3><form onsubmit="simpanAkunBaru(event)" style="background:#fef3c7; padding:12px; border-radius:8px; border:1px solid #fde68a; margin-bottom:15px;"><div class="form-group"><label>Nama Kasir/Karyawan:</label><input type="text" id="inAkunNama" required></div><div class="form-group"><label>No. HP:</label><input type="tel" id="inAkunHp" required></div><div class="grid-mobile"><div class="form-group"><label>Password:</label><input type="text" id="inAkunPass" required></div><div class="form-group"><label>Jabatan (Role):</label><select id="inAkunRole"><option value="kasir">🧑‍🍳 Kasir</option><option value="owner">👑 Owner</option></select></div></div><button type="submit" class="btn btn-warning" style="margin-top:8px;">+ Tambahkan Akun</button></form><div class="table-wrapper" style="max-height:200px; overflow-y:auto;"><table><thead><tr><th>Nama</th><th>No. HP</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="tbodyDaftarAkun"></tbody></table></div><button type="button" class="btn btn-outline" onclick="tutupModalKelolaAkun()">Tutup</button></div></div>
+<div class="modal" id="modalCetakPeriode"><div class="modal-content"><h3 id="modalCetakJudul" style="font-size:1.1rem; font-weight:800;">Cetak Laporan</h3><input type="hidden" id="jenisCetakPeriode"><div id="formCetakMingguan" style="display:none;"><div class="form-group"><label>Dari Tanggal:</label><input type="date" id="cetakTglAwal"></div><div class="form-group"><label>Sampai Tanggal:</label><input type="date" id="cetakTglAkhir"></div></div><div id="formCetakBulanan" style="display:none;"><div class="form-group"><label>Pilih Bulan & Tahun:</label><input type="month" id="cetakBulan"></div></div><div style="display:flex; gap:8px; margin-top:16px;"><button type="button" class="btn btn-outline" onclick="tutupModalCetakPeriode()">Batal</button><button type="button" class="btn btn-pdf" onclick="eksekusiCetakPeriode()">Cetak PDF</button></div></div></div>
+<div class="modal" id="modalKelolaProduk"><div class="modal-content"><h3 style="font-size:1.1rem; font-weight:800;">⚙️ Master Produk</h3><form onsubmit="simpanProdukBaru(event)"><input type="hidden" id="editIndexProduk" value="-1"><div class="form-group"><label>Nama Dasar Produk (Cth: Teh Sosro):</label><input type="text" id="inputNamaProduk" required></div><div class="grid-mobile"><div class="form-group"><label>Kemasan (Cth: Botol Beling):</label><input type="text" id="inputKemasanProduk"></div><div class="form-group"><label>Varian (Cth: Original):</label><input type="text" id="inputVarianProduk"></div></div><div class="grid-mobile" style="margin-top:8px;"><div class="form-group"><label>Modal (Rp):</label><input type="number" id="inputModalProduk" min="0" required oninput="hitungMarginForm()"></div><div class="form-group"><label>Jual (Rp):</label><input type="number" id="inputJualProduk" min="0" required oninput="hitungMarginForm()"></div></div><div class="form-group"><label>Margin / Profit:</label><input type="number" id="inputMarginProduk" readonly style="color:#16a34a; font-weight:bold; background:#f0fdf4;"></div><div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn btn-danger" onclick="tutupModalKelolaProduk()">Batal</button><button type="submit" class="btn btn-success" id="btnSimpanProduk">Simpan</button></div></form><div class="table-wrapper" style="max-height:180px; overflow-y:auto; margin-top:12px;"><table><thead><tr><th>No</th><th style="text-align:left;">Produk</th><th>Mod</th><th>Jual</th><th>Aksi</th></tr></thead><tbody id="tbodyMasterProduk"></tbody></table></div></div></div>
+<div class="modal" id="modalKas"><div class="modal-content"><h3 id="modalKasJudul" style="font-size:1.1rem; font-weight:800;">Kelola Kas</h3><form onsubmit="prosesTransaksiKas(event)"><input type="hidden" id="modalJenisKas"><div class="form-group"><label>Tipe Transaksi:</label><select id="modalTipeTx"><option value="masuk">🟢 SETOR (+)</option><option value="keluar">🔴 TARIK (-)</option></select></div><div class="form-group"><label>Nominal (Rp):</label><input type="number" id="modalNominalTx" required min="1"></div><div class="form-group"><label>Catatan:</label><input type="text" id="modalKetTx" required></div><div style="display:flex; gap:8px; margin-top:16px;"><button type="button" class="btn btn-danger" onclick="tutupModalKas()">Batal</button><button type="submit" class="btn btn-success">Simpan</button></div></form></div></div>
+
+<!-- PDF TEMPLATES -->
+<div id="pdfAreaPeriode" class="pdf-area-container">
+    <div class="kop-surat"><img src="logo soyou.png" alt="Logo"><div class="kop-surat-text"><h1>KEDAI SOYOU</h1><p></p></div></div>
+    <div class="pdf-header"><h2 id="pdfJudulPeriode">LAPORAN REKAPITULASI</h2><p id="pdfTglPeriode" style="font-weight: bold; font-size:0.9rem; color:#57534e; margin:0;"></p></div>
+    <div class="pdf-section-title">1. RINGKASAN PENJUALAN</div>
+    <div class="pdf-box"><div class="pdf-row total"><span>TOTAL KESELURUHAN OMSET:</span><span id="pdfTotalOmset" style="color:#d97706;">Rp 0</span></div></div>
+    <div class="pdf-section-title">2. ALOKASI DANA & BAGI HASIL</div>
+    <div class="pdf-box"><div class="pdf-row" style="color:#b45309; font-weight:bold;"><span>📦 Total Uang Modal (Untuk Belanja):</span><span id="pdfTotalModal">Rp 0</span></div><div class="pdf-row total" style="border-color:#16a34a;"><span>TOTAL PROFIT BERSIH:</span><span id="pdfTotalProfitBersih" style="color:#16a34a;">Rp 0</span></div></div>
+    <div class="pdf-box" style="background:#f0fdf4; border-color:#86efac;"><div class="pdf-row"><span>🤝 Hak Partner (40%):</span><span id="pdfAllocPartner" style="font-weight:bold; color:#0369a1;">Rp 0</span></div><div class="pdf-row total" style="background:#fffbeb; padding:6px;"><span>👑 HAK ANDA (60%):</span><span id="pdfAllocOwner" style="color:#b45309; font-size:0.9rem;">Rp 0</span></div><div style="font-size:0.75rem; color:#dc2626; margin-top:4px; font-weight:bold;">*Catatan: Hak Anda di atas sudah dipotong biaya operasional Rp 25.000 (Khusus Cetak Mingguan).</div></div>
+    <div class="pdf-section-title">3. DETAIL BARANG TERJUAL</div>
+    <div><table><thead><tr><th>Produk & Kemasan</th><th>Varian</th><th>Laku</th><th>Omset</th><th>Profit</th></tr></thead><tbody id="pdfTbodyProdukPeriode"></tbody></table></div>
+</div>
+<div id="pdfAreaHarian" class="pdf-area-container">
+    <div class="kop-surat"><img src="logo soyou.png" alt="Logo"><div class="kop-surat-text"><h1>KEDAI SOYOU</h1><p></p></div></div>
+    <div class="pdf-header" style="border-bottom: 2px solid #f59e0b;"><h2 style="color: #b45309;">LAPORAN STOK & KASIR HARIAN</h2><p id="pdfHariTgl" style="font-weight: bold; font-size:0.9rem; color:#57534e; margin:0;"></p></div>
+    <div class="pdf-section-title" style="border-left-color: #f59e0b;">1. PEMASUKAN UANG (KASIR)</div>
+    <div class="pdf-box"><div class="pdf-row"><span>💵 Cash Laci Fisik:</span><span id="pdfHrCash">Rp 0</span></div><div class="pdf-row"><span>📱 QRIS:</span><span id="pdfHrQris">Rp 0</span></div><div class="pdf-row total" style="border-color:#f59e0b;"><span>TOTAL UANG AKTUAL:</span><span id="pdfHrTotalMasuk" style="color:#d97706;">Rp 0</span></div></div>
+    <div id="pdfHrTitleProfit" class="pdf-section-title" style="border-left-color: #16a34a;">2. RINGKASAN KEUANGAN</div>
+    <div id="pdfHrBoxProfit" class="pdf-box" style="background:#f0fdf4; border-color:#86efac;">
+        <div class="pdf-row"><span>📦 Uang Modal Belanja (Amankan):</span><span id="pdfHrModalBelanja" style="font-weight:bold; color:#b45309;">Rp 0</span></div>
+        <div class="pdf-row total" style="border-color:#16a34a; padding:6px 0;"><span>TOTAL PROFIT BERSIH:</span><span id="pdfHrBersih" style="color:#15803d;">Rp 0</span></div>
+        <div style="border-top:1px dashed #86efac; margin-top:4px; padding-top:4px;"><div class="pdf-row"><span>🤝 Hak Partner (40%):</span><span id="pdfHrPartner" style="font-weight:bold; color:#0369a1;">Rp 0</span></div><div class="pdf-row"><span>👑 Hak Anda (60%):</span><span id="pdfHrOwner" style="font-weight:bold; color:#b45309;">Rp 0</span></div></div>
+    </div>
+    <div class="pdf-section-title" style="border-left-color: #a8a29e;">DATA BARANG TERJUAL</div>
+    <div><table><thead id="pdfTHeadHarianBarang"></thead><tbody id="pdfTbodyHarianBarang"></tbody></table></div>
+</div>
+<div id="pdfAreaTransfer" class="pdf-area-container">
+    <div class="kop-surat"><img src="logo soyou.png" alt="Logo"><div class="kop-surat-text"><h1>KEDAI SOYOU</h1><p></p></div></div>
+    <div class="pdf-header" style="border-bottom: 2px solid #f59e0b;"><h2 style="color: #b45309;">LAPORAN REKAP TRANSFER DOMPET</h2><p id="pdfStrukTgl" style="font-weight: bold; font-size:0.9rem; color:#57534e; margin:0;"></p></div>
+    <div class="pdf-section-title" style="border-left-color: #f59e0b;">A. RINCIAN OMSET SEHARUSNYA</div>
+    <div class="pdf-box">
+        <div class="pdf-row"><span>Alokasi Modal Belanja:</span><span id="stKasModal" style="color:#dc2626; font-weight:bold;">Rp 0</span></div>
+        <div class="pdf-row"><span>Hak Partner (40%):</span><span id="stPartner" style="color:#0284c7; font-weight:bold;">Rp 0</span></div>
+        <div class="pdf-row"><span>Hak Anda (60%):</span><span id="stOwner" style="color:#b45309; font-weight:bold;">Rp 0</span></div>
+        <div class="pdf-row total"><span>TOTAL OMSET (A):</span><span id="stTotalA">Rp 0</span></div>
+    </div>
+    <div class="pdf-section-title" style="border-left-color: #16a34a;">B. TOTAL UANG AKTUAL</div>
+    <div class="pdf-box" style="background:#f0fdf4; border-color:#86efac;">
+        <div class="pdf-row"><span>💵 Cash Laci Fisik:</span><span id="stCash">Rp 0</span></div>
+        <div class="pdf-row"><span>📱 QRIS:</span><span id="stQris">Rp 0</span></div>
+        <div class="pdf-row total" style="border-color:#16a34a;"><span>TOTAL AKTUAL (B):</span><span id="stTotalB">Rp 0</span></div>
+    </div>
+    <div id="boxStatusSetor" style="margin-top:20px; padding:20px; border: 2px dashed #a8a29e; border-radius: 8px; text-align: center;">
+        <div id="stFinalKet" style="font-weight: 800; font-size: 1.1rem; color: #57534e; margin-bottom: 8px;">STATUS BALANCE</div>
+        <div id="stFinalValue" style="font-size: 2rem; font-weight: 900;">Rp 0</div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyB2H9QoCwaZOYn7K1UyLeCOOu8Byvs61Bg",
+        authDomain: "kedaisoyou.firebaseapp.com",
+        databaseURL: "https://kedaisoyou-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "kedaisoyou",
+        storageBucket: "kedaisoyou.firebasestorage.app",
+        messagingSenderId: "1057238530589",
+        appId: "1:1057238530589:web:d358014f5f685c4c4ce4f4",
+        measurementId: "G-05C04VXK2N"
+    };
+
+    if (firebaseConfig.apiKey !== "ISI_API_KEY_FIREBASE_ANDA") { firebase.initializeApp(firebaseConfig); }
+    const db = (firebase.apps && firebase.apps.length > 0) ? firebase.firestore() : null;
+
+    const defaultMasterProduk = [
+        { nama: "Teh Sosro", kemasan: "Botol Beling", varian: "Original", modal: 2000, jual: 5000, margin: 3000 },
+        { nama: "Teh Sosro", kemasan: "Kotak / Plastik", varian: "Original", modal: 2500, jual: 5000, margin: 2500 },
+        { nama: "Teh Sosro", kemasan: "Kotak / Plastik", varian: "Less Sugar", modal: 2500, jual: 5000, margin: 2500 },
+        { nama: "Fruit Tea", kemasan: "Botol Beling", varian: "Blackcurrent", modal: 2000, jual: 5000, margin: 3000 },
+        { nama: "Fruit Tea", kemasan: "Kotak / Plastik", varian: "Lemon", modal: 2500, jual: 5000, margin: 2500 },
+        { nama: "Fruit Tea", kemasan: "Kotak / Plastik", varian: "Blackcurrent", modal: 2500, jual: 5000, margin: 2500 },
+        { nama: "Fruit Tea", kemasan: "Kotak / Plastik", varian: "Apel", modal: 2500, jual: 5000, margin: 2500 },
+        { nama: "Country Choice", kemasan: "Kotak / Plastik", varian: "Mangga", modal: 4500, jual: 8000, margin: 3500 },
+        { nama: "Country Choice", kemasan: "Kotak / Plastik", varian: "Jeruk", modal: 4500, jual: 8000, margin: 3500 },
+        { nama: "Country Choice", kemasan: "Kotak / Plastik", varian: "Jambu", modal: 4500, jual: 8000, margin: 3500 },
+        { nama: "Country Choice", kemasan: "Kotak / Plastik", varian: "Apel", modal: 4500, jual: 8000, margin: 3500 },
+        { nama: "Air Mineral", kemasan: "Botol / Cup", varian: "Original", modal: 1600, jual: 4000, margin: 2400 },
+        { nama: "Tebs", kemasan: "Botol Beling", varian: "Original", modal: 2200, jual: 5000, margin: 2800 }
+    ];
+    
+    // Default Data Vendor (Disimpan permanen via Firebase)
+    const defaultMasterVendor = [
+        { nama: "Prima Mineral", kemasan: "Botol Pelastik", vol: "600 Ml", isi: 24, rasa: "Original", harga: 38000 },
+        { nama: "Teh Botol Sosro", kemasan: "Botol Beling", vol: "220 Ml", isi: 24, rasa: "Original", harga: 48000 },
+        { nama: "Teh Botol Sosro", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Original", harga: 60000 },
+        { nama: "Teh Botol Sosro", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Less Sugar", harga: 60000 },
+        { nama: "Fruit Tea", kemasan: "Botol Beling", vol: "235 Ml", isi: 24, rasa: "Blackcurrent", harga: 48000 },
+        { nama: "Fruit Tea", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Lemon", harga: 60000 },
+        { nama: "Fruit Tea", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Blackcurrent", harga: 60000 },
+        { nama: "Fruit Tea", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Apel", harga: 60000 },
+        { nama: "Country Choice", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Mangga", harga: 105000 },
+        { nama: "Country Choice", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Jeruk", harga: 105000 },
+        { nama: "Country Choice", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Jambu", harga: 105000 },
+        { nama: "Country Choice", kemasan: "Carton Pack", vol: "250 Ml", isi: 24, rasa: "Apel", harga: 105000 },
+        { nama: "Tebs", kemasan: "Botol Beling", vol: "230 Ml", isi: 24, rasa: "Original", harga: 51000 },
+        { nama: "Tebs", kemasan: "Kaleng", vol: "330 Ml", isi: 20, rasa: "Original", harga: 85000 },
+        { nama: "Tebs", kemasan: "Botol Pelastik", vol: "300 Ml", isi: 12, rasa: "Zero Lychee", harga: 45000 },
+        { nama: "Tebs", kemasan: "Botol Pelastik", vol: "300 Ml", isi: 12, rasa: "Mix Fruit", harga: 45000 },
+        { nama: "Tebs", kemasan: "Botol Pelastik", vol: "300 Ml", isi: 12, rasa: "Lemon Lime", harga: 45000 }
+    ];
+
+    let masterProduk = defaultMasterProduk;
+    let masterVendor = [];
+
+    let dbStok = {}, dbKasMasuk = {}, dbLogKas = [], dbStatusKunci = {};
+    let activeKasTab = 'Modal Belanja';
+    let currentUser = null;
+    let listAkunKasir = [];
+    let hasAlertedTgl = "";
+    
+    let chartTren = null;
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    function updateOnlineStatus() {
+        const statusText = document.getElementById('statusSyncText');
+        if (navigator.onLine) {
+            statusText.innerHTML = '🟢 ONLINE';
+            statusText.style.background = 'linear-gradient(135deg, #22c55e, #16a34a)';
+            showToast('🌐 Koneksi internet kembali!');
+        } else {
+            statusText.innerHTML = '🔴 OFFLINE';
+            statusText.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+            showToast('⚠️ Koneksi terputus! Cek internet Anda.');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateOnlineStatus(); 
+        const savedUser = localStorage.getItem('baksoUser');
+        if (savedUser) { currentUser = JSON.parse(savedUser); bukaLayarAplikasi(); } 
+        else { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('appScreen').style.display = 'none'; }
+        if(db) cekDanBuatAkunMaster();
+    });
+
+    function showToast(message) {
+        const toast = document.getElementById('toastNotif');
+        toast.innerHTML = message || '✅ Tersimpan!';
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 2000);
+    }
+
+    function cekDanBuatAkunMaster() { db.collection('users').get().then(snap => { if (snap.empty) { db.collection('users').doc('08111111111').set({ nama: 'Owner (Master)', hp: '08111111111', password: 'owner123', role: 'owner' }); } }); }
+    function prosesLogin(e) { e.preventDefault(); const hp = document.getElementById('inLoginHp').value; const pass = document.getElementById('inLoginPass').value; const btn = document.getElementById('btnLoginBtn'); if(!db) { alert("Tidak ada koneksi ke database!"); return; } btn.innerText = "MEMERIKSA..."; btn.disabled = true; db.collection('users').doc(hp).get().then(doc => { if (doc.exists && doc.data().password === pass) { currentUser = doc.data(); localStorage.setItem('baksoUser', JSON.stringify(currentUser)); bukaLayarAplikasi(); } else { alert("Gagal Masuk! Nomor HP atau Password salah."); } btn.innerText = "MASUK"; btn.disabled = false; }).catch(err => { alert("Error: " + err.message); btn.innerText = "MASUK"; btn.disabled = false; }); }
+    
+    function bukaLayarAplikasi() { 
+        document.getElementById('loginScreen').style.display = 'none'; document.getElementById('appScreen').style.display = 'block'; 
+        document.getElementById('namaUserAktif').innerText = currentUser.nama; 
+        
+        const isOwner = currentUser.role === 'owner';
+        document.getElementById('roleUserAktif').innerText = isOwner ? '👑 OWNER' : '🧑‍🍳 KASIR'; 
+        
+        document.getElementById('menuOrderVendor').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuTransfer').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuMutasi').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuDashboard').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuProduk').style.display = 'block'; 
+        document.getElementById('menuKelolaAkun').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuCetak1').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuCetak2').style.display = isOwner ? 'block' : 'none'; 
+        
+        document.getElementById('cardAlokasiHarian').style.display = isOwner ? 'block' : 'none'; 
+        
+        document.getElementById('viewHarian').style.display = 'block'; 
+        document.getElementById('viewOrderVendor').style.display = 'none'; 
+        document.getElementById('viewRekapTransfer').style.display = 'none'; 
+        document.getElementById('viewMutasiKas').style.display = 'none'; 
+        document.getElementById('viewDashboard').style.display = 'none'; 
+
+        if (isOwner) { document.getElementById('viewDashboard').style.display = 'block'; document.getElementById('viewHarian').style.display = 'none'; } 
+
+        const today = new Date(); document.getElementById('tglOps').valueAsDate = today; 
+        document.getElementById('cetakTglAwal').valueAsDate = today; document.getElementById('cetakTglAkhir').valueAsDate = today; 
+        document.getElementById('cetakBulan').value = today.toISOString().slice(0, 7); 
+        
+        try { inisiatisasiRealtimeListener(); } catch(e) { loadDataTanggalLocal(); } 
+    }
+    
+    function prosesLogout() { if(confirm("Keluar dari aplikasi?")) { localStorage.removeItem('baksoUser'); currentUser = null; window.location.reload(); } }
+
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
+    function pilihMenuNav(jenis) { 
+        toggleSidebar(); 
+        document.getElementById('viewHarian').style.display = 'none'; 
+        document.getElementById('viewOrderVendor').style.display = 'none'; 
+        document.getElementById('viewRekapTransfer').style.display = 'none'; 
+        document.getElementById('viewMutasiKas').style.display = 'none'; 
+        document.getElementById('viewDashboard').style.display = 'none'; 
+        
+        if (jenis === 'harian') { document.getElementById('viewHarian').style.display = 'block'; } 
+        else if (jenis === 'orderVendor') { document.getElementById('viewOrderVendor').style.display = 'block'; renderTabelOrderVendor(); }
+        else if (jenis === 'rekapTransfer') { document.getElementById('viewRekapTransfer').style.display = 'block'; renderViewRekapTransfer(); } 
+        else if (jenis === 'mutasiKas') { document.getElementById('viewMutasiKas').style.display = 'block'; hitungAkumulasiKasTotal(); }
+        else if (jenis === 'dashboard') { document.getElementById('viewDashboard').style.display = 'block'; renderDashboardGrafik(); }
+    }
+    
+    function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka || 0); }
+
+    // ================= FUNGSI HALAMAN PEMESANAN VENDOR =================
+    
+    function bukaModalVendor() {
+        document.getElementById('inVenNama').value = ''; document.getElementById('inVenKemasan').value = '';
+        document.getElementById('inVenVol').value = ''; document.getElementById('inVenRasa').value = '';
+        document.getElementById('inVenHarga').value = '';
+        document.getElementById('modalTambahVendor').classList.add('active');
+    }
+
+    function tutupModalVendor() { document.getElementById('modalTambahVendor').classList.remove('active'); }
+
+    function simpanProdukVendorBaru(e) {
+        e.preventDefault();
+        const p = {
+            nama: document.getElementById('inVenNama').value.trim(),
+            kemasan: document.getElementById('inVenKemasan').value.trim(),
+            vol: document.getElementById('inVenVol').value.trim(),
+            isi: "-",
+            rasa: document.getElementById('inVenRasa').value.trim(),
+            harga: parseFloat(document.getElementById('inVenHarga').value) || 0
+        };
+        masterVendor.push(p);
+        if(db) {
+            db.collection('appData').doc('masterVendor').set({ list: masterVendor }).then(() => {
+                tutupModalVendor();
+                showToast('📦 Produk Vendor Ditambahkan!');
+            });
+        }
+    }
+
+    function hapusProdukVendor(idx) {
+        if(confirm("Apakah Anda yakin ingin menghapus produk ini dari daftar vendor?")) {
+            masterVendor.splice(idx, 1);
+            if(db) db.collection('appData').doc('masterVendor').set({ list: masterVendor });
+            renderTabelOrderVendor();
+        }
+    }
+
+    function updateHargaVendorDB(idx, newVal) {
+        const hrgBaru = parseFloat(newVal) || 0;
+        masterVendor[idx].harga = hrgBaru;
+        if(db) db.collection('appData').doc('masterVendor').set({ list: masterVendor });
+        hitungTotalOrderVendor();
+    }
+
+    function renderTabelOrderVendor() {
+        const tbody = document.getElementById('tbodyOrderVendor');
+        tbody.innerHTML = '';
+        masterVendor.forEach((p, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><div style="font-weight:800; color:var(--text-main); font-size:0.75rem;">${p.nama}</div><small style="color:#78716c;">${p.kemasan}</small></td>
+                <td style="text-align:center;"><div style="font-weight:600; font-size:0.75rem;">${p.vol || ''}</div><small style="color:#78716c;">Isi: ${p.isi || '-'}</small></td>
+                <td style="text-align:center; font-weight:700; color:#44403c; font-size:0.7rem;">${p.rasa}</td>
+                <td style="text-align:center;"><input type="number" id="qtyOrder_${idx}" class="input-stok" style="background:#f0fdf4; border-color:#86efac; width:50px;" min="0" oninput="hitungTotalOrderVendor()"></td>
+                <td style="text-align:center;"><input type="number" id="hargaOrder_${idx}" class="input-stok" style="width:80px; font-weight:600;" value="${p.harga}" min="0" oninput="hitungTotalOrderVendor()" onchange="updateHargaVendorDB(${idx}, this.value)"></td>
+                <td style="text-align:right; font-weight:800; color:#1d4ed8;" id="totalOrder_${idx}">0</td>
+                <td style="text-align:center;"><button onclick="hapusProdukVendor(${idx})" class="btn btn-danger" style="padding:4px; font-size:0.6rem; width:auto; border-radius:4px;">🗑️</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        hitungTotalOrderVendor();
+    }
+
+    function hitungTotalOrderVendor() {
+        let grandTotal = 0;
+        masterVendor.forEach((p, idx) => {
+            const qtyInput = document.getElementById(`qtyOrder_${idx}`);
+            const hargaInput = document.getElementById(`hargaOrder_${idx}`);
+            
+            const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+            const hrg = hargaInput ? parseFloat(hargaInput.value) || 0 : p.harga;
+            
+            const total = qty * hrg;
+            grandTotal += total;
+            
+            const tdTotal = document.getElementById(`totalOrder_${idx}`);
+            if(tdTotal) { tdTotal.innerText = total > 0 ? new Intl.NumberFormat('id-ID').format(total) : "0"; }
+        });
+        document.getElementById('txtGrandTotalOrder').innerText = formatRupiah(grandTotal);
+    }
+
+    function kirimOrderWA() {
+        const tgl = document.getElementById('tglOps').value;
+        let text = `*FORM ORDER KEDAI SOYOU*\nTanggal: ${tgl}\n\n`;
+        let grandTotal = 0;
+        let adaOrder = false;
+
+        masterVendor.forEach((p, idx) => {
+            const qtyInput = document.getElementById(`qtyOrder_${idx}`);
+            const hargaInput = document.getElementById(`hargaOrder_${idx}`);
+            const qty = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+            const hrg = hargaInput ? parseFloat(hargaInput.value) || 0 : p.harga;
+            
+            if(qty > 0) {
+                adaOrder = true;
+                const total = qty * hrg;
+                grandTotal += total;
+                text += `- ${p.nama} (${p.kemasan}, ${p.vol}, ${p.rasa}) - *${qty} Krt* - Rp ${new Intl.NumberFormat('id-ID').format(total)}\n`;
+            }
+        });
+
+        if(!adaOrder) {
+            alert("⚠️ Anda belum mengisi Qty produk apapun!");
+            return;
+        }
+        text += `\n*GRAND TOTAL ORDER: ${formatRupiah(grandTotal)}*`;
+        const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(waUrl, '_blank');
+    }
+    // ===================================================================
+
+    function bukaModalKelolaAkun() { if (currentUser.role !== 'owner') return; toggleSidebar(); document.getElementById('modalKelolaAkun').classList.add('active'); muatDaftarAkun(); }
+    function tutupModalKelolaAkun() { document.getElementById('modalKelolaAkun').classList.remove('active'); }
+    function muatDaftarAkun() { if(!db) return; db.collection('users').get().then(snap => { listAkunKasir = []; const tbody = document.getElementById('tbodyDaftarAkun'); tbody.innerHTML = ''; snap.forEach(doc => { const data = doc.data(); listAkunKasir.push(data); const roleBadge = data.role === 'owner' ? '<span style="color:#d97706;font-weight:bold;">👑 Owner</span>' : '🧑‍🍳 Kasir'; const aksiBtn = data.hp === currentUser.hp ? '<i>(Anda)</i>' : `<button onclick="hapusAkunUser('${data.hp}')" class="btn btn-danger" style="padding:4px; font-size:0.6rem; margin:0; width:auto;">Hapus</button>`; tbody.innerHTML += `<tr><td><strong>${data.nama}</strong><br><small style="color:var(--text-muted);">Pass: ${data.password}</small></td><td>${data.hp}</td><td>${roleBadge}</td><td style="text-align:center;">${aksiBtn}</td></tr>`; }); }); }
+    function simpanAkunBaru(e) { e.preventDefault(); const nama = document.getElementById('inAkunNama').value.trim(); const hp = document.getElementById('inAkunHp').value.trim(); const password = document.getElementById('inAkunPass').value.trim(); const role = document.getElementById('inAkunRole').value; if(!db) return; db.collection('users').doc(hp).set({ nama, hp, password, role }).then(() => { alert(`Akun dibuat!\nHP: ${hp}\nPass: ${password}`); document.getElementById('inAkunNama').value = ''; document.getElementById('inAkunHp').value = ''; document.getElementById('inAkunPass').value = ''; muatDaftarAkun(); }); }
+    function hapusAkunUser(hp) { if(confirm(`Hapus akses No HP ${hp}?`)) { db.collection('users').doc(hp).delete().then(() => { muatDaftarAkun(); }); } }
+
+    function inisiatisasiRealtimeListener() {
+        if (!db) throw new Error("Database tidak terhubung!");
+        
+        db.collection('statusHarian').onSnapshot(snapshot => { 
+            snapshot.forEach(doc => { dbStatusKunci[doc.id] = doc.data().terkunci; }); 
+            const tgl = document.getElementById('tglOps').value;
+            if(dbStok[tgl]) cekDanTarikDataKemarin(tgl); 
+            applyLockUI(); 
+        });
+        
+        db.collection('appData').doc('masterProduk').onSnapshot(doc => { 
+            if (doc.exists && doc.data().list) { masterProduk = doc.data().list; } 
+            else { db.collection('appData').doc('masterProduk').set({ list: defaultMasterProduk }); masterProduk = defaultMasterProduk; } 
+            loadDataTanggalLocal(); 
+        });
+
+        // LISTENER UNTUK MASTER VENDOR
+        db.collection('appData').doc('masterVendor').onSnapshot(doc => {
+            if (doc.exists && doc.data().list) { masterVendor = doc.data().list; } 
+            else { db.collection('appData').doc('masterVendor').set({ list: defaultMasterVendor }); masterVendor = defaultMasterVendor; }
+            if(document.getElementById('viewOrderVendor').style.display === 'block') {
+                if (document.activeElement && document.activeElement.tagName === 'INPUT') return; // Mencegah reset layar saat sedang mengetik
+                renderTabelOrderVendor();
+            }
+        });
+        
+        db.collection('stokHarian').onSnapshot(snapshot => { 
+            snapshot.forEach(doc => { dbStok[doc.id] = doc.data().items; }); 
+            const tgl = document.getElementById('tglOps').value; 
+            if (!document.activeElement || !document.activeElement.classList.contains('input-stok')) { 
+                syncStokDenganMaster(tgl); 
+                cekDanTarikDataKemarin(tgl);
+                renderTabelMatriks(); 
+                updateKalkulasi(); 
+            } 
+        });
+        
+        db.collection('kasMasuk').onSnapshot(snapshot => { 
+            snapshot.forEach(doc => { dbKasMasuk[doc.id] = doc.data(); }); 
+            if (document.activeElement.id !== 'inCash' && document.activeElement.id !== 'inQris') {
+                loadKasMasukUI(); 
+            }
+            updateKalkulasi(); 
+        });
+        
+        db.collection('logKas').onSnapshot(snapshot => { dbLogKas = []; snapshot.forEach(doc => { dbLogKas.push({ id: doc.id, ...doc.data() }); }); hitungAkumulasiKasTotal(); });
+    }
+
+    function cekDanTarikDataKemarin(tgl) {
+        if (isDataLocked(tgl)) return;
+        let dateObj = new Date(tgl); dateObj.setDate(dateObj.getDate() - 1);
+        let tglKemarin = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        let isKemarinLocked = dbStatusKunci[tglKemarin] === true;
+        let needsUpdateUI = false;
+
+        if (dbStok[tgl]) {
+            let isNeedsPullStok = dbStok[tgl].some(p => p.awal === "" || p.awal === null);
+            if (isNeedsPullStok && dbStok[tglKemarin] && dbStok[tglKemarin].length > 0) {
+                if (isKemarinLocked) {
+                    dbStok[tgl].forEach((p, idx) => {
+                        if (p.awal === "" || p.awal === null) {
+                            let pKemarin = dbStok[tglKemarin].find(x => x.nama === p.nama && x.kemasan === p.kemasan && x.varian === p.varian);
+                            if(!pKemarin) pKemarin = dbStok[tglKemarin].find(x => x.nama === p.nama); 
+                            if (pKemarin && pKemarin.sisa !== "" && pKemarin.sisa !== null) {
+                                dbStok[tgl][idx].awal = pKemarin.sisa;
+                                needsUpdateUI = true;
+                            }
+                        }
+                    });
+                } else {
+                    if (hasAlertedTgl !== tgl) { 
+                        alert(`⚠️ Data tanggal ${tglKemarin} BELUM DIGEMBOK!\nSilakan ke tanggal ${tglKemarin} lalu klik '🔓 BUKA' menjadi '🔒 TERKUNCI' agar stok sisa tertarik otomatis.`);
+                        hasAlertedTgl = tgl;
+                    }
+                }
+            }
+        }
+        if (needsUpdateUI && document.activeElement && document.activeElement.tagName !== 'INPUT') { renderTabelMatriks(); updateKalkulasi(); }
+    }
+
+    function syncStokDenganMaster(tgl) { 
+        if (!dbStok[tgl]) { 
+            dbStok[tgl] = masterProduk.map(p => ({ ...p, awal: "", tambah: "", kurang: "", sisa: "" })); 
+        } else { 
+            let currentStok = dbStok[tgl], newStokList = []; 
+            masterProduk.forEach(mp => { 
+                let found = currentStok.find(item => item.nama === mp.nama && item.kemasan === mp.kemasan && item.varian === mp.varian);
+                if(!found) found = currentStok.find(item => item.nama === mp.nama);
+                
+                if (found) newStokList.push({ ...mp, awal: found.awal, tambah: found.tambah || "", kurang: found.kurang || "", sisa: found.sisa }); 
+                else newStokList.push({ ...mp, awal: "", tambah: "", kurang: "", sisa: "" }); 
+            }); 
+            dbStok[tgl] = newStokList; 
+        } 
+    }
+    
+    function updateNilaiStokLokal(idx, tipe, val) { 
+        const tgl = document.getElementById('tglOps').value; 
+        if (!dbStok[tgl]) syncStokDenganMaster(tgl); 
+        if (tipe === 'awal') dbStok[tgl][idx].awal = val; 
+        if (tipe === 'tambah') dbStok[tgl][idx].tambah = val; 
+        if (tipe === 'kurang') dbStok[tgl][idx].kurang = val; 
+        if (tipe === 'sisa') dbStok[tgl][idx].sisa = val; 
+        updateKalkulasi(); 
+    }
+    
+    function loadDataTanggalLocal() { 
+        const tgl = document.getElementById('tglOps').value; 
+        syncStokDenganMaster(tgl); 
+        cekDanTarikDataKemarin(tgl); 
+        renderTabelMatriks(); 
+        loadKasMasukUI(); 
+        updateKalkulasi(); 
+        applyLockUI(); 
+    }
+    
+    function isDataLocked(tgl) { return dbStatusKunci[tgl] === true; }
+    function toggleLock() { const tgl = document.getElementById('tglOps').value; const currentlyLocked = isDataLocked(tgl); if (currentlyLocked) { if(confirm("Buka gembok data hari ini?")) { setLockStatus(tgl, false); } } else { if(confirm("Kunci data hari ini?")) { setLockStatus(tgl, true); } } }
+    function setLockStatus(tgl, status) { if(db) { db.collection('statusHarian').doc(tgl).set({ terkunci: status }); } else { dbStatusKunci[tgl] = status; applyLockUI(); } }
+    
+    function applyLockUI() { 
+        const tgl = document.getElementById('tglOps').value; const locked = isDataLocked(tgl); const btnToggle = document.getElementById('btnToggleLock'); 
+        if(locked) { btnToggle.className = 'btn-lock locked'; btnToggle.innerHTML = '🔒 TERKUNCI'; } else { btnToggle.className = 'btn-lock unlock'; btnToggle.innerHTML = '🔓 TERBUKA'; } 
+        const idsToDisable = ['inCash', 'inQris']; 
+        idsToDisable.forEach(id => { const el = document.getElementById(id); if(el) el.disabled = locked; }); 
+        if (document.activeElement && document.activeElement.tagName !== 'INPUT') { renderTabelMatriks(); } 
+    }
+
+    function renderTabelMatriks() {
+        const tgl = document.getElementById('tglOps').value; const locked = isDataLocked(tgl);
+        const thead = document.getElementById('theadMatriks');
+        
+        thead.innerHTML = `<tr>
+            <th style="text-align:left;">Nama & Kemasan</th>
+            <th style="text-align:left;">Varian</th>
+            <th style="background:#fef9c3; color:#854d0e;">Awal</th>
+            <th style="background:#dcfce7; color:#166534; font-size: 0.9rem;">+</th>
+            <th style="background:#fee2e2; color:#991b1b; font-size: 0.9rem;">-</th>
+            <th style="background:#f5f5f4; color:#292524; font-size: 0.9rem;">=</th>
+            <th style="background:#e7e5e4; color:#44403c;">Sisa</th>
+            <th>Harga</th>
+            <th>Aksi</th>
+        </tr>`;
+        
+        const tbody = document.getElementById('tbodyMatriks'); tbody.innerHTML = '';
+        
+        (dbStok[tgl] || []).forEach((p, idx) => {
+            const awal = (p.awal !== "" && p.awal !== null) ? parseFloat(p.awal) : 0; 
+            const tambah = (p.tambah !== "" && p.tambah !== null && p.tambah !== undefined) ? parseFloat(p.tambah) : 0;
+            const kurang = (p.kurang !== "" && p.kurang !== null && p.kurang !== undefined) ? parseFloat(p.kurang) : 0;
+            const totalStok = awal + tambah - kurang;
+            
+            const actionHTML = locked ? '<span style="font-size:0.8rem;color:#a8a29e;">🔒</span>' : `<button onclick="hapusProduk(${idx})" class="btn btn-danger" style="padding:4px 6px; font-size:0.6rem; margin:0; border-radius:4px;">🗑️</button>`;
+            
+            const txtKemasan = p.kemasan ? `<br><small style="color:#78716c; font-weight:normal;">${p.kemasan}</small>` : '';
+            const txtVarian = p.varian || '-';
+
+            const tr = document.createElement('tr');
+            
+            tr.innerHTML = `
+                <td><div style="font-weight:700; color:var(--text-main); font-size:0.75rem;">${p.nama}</div>${txtKemasan}</td>
+                <td><div style="font-weight:600; color:#44403c; font-size:0.7rem;">${txtVarian}</div></td>
+                <td style="text-align:center;"><input type="number" class="input-stok input-pagi" id="pagi_${idx}" value="${p.awal}" min="0" oninput="updateNilaiStokLokal(${idx}, 'awal', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+                <td style="text-align:center;"><input type="number" class="input-stok input-tambah" id="tambah_${idx}" value="${p.tambah || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'tambah', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+                <td style="text-align:center;"><input type="number" class="input-stok input-kurang" id="kurang_${idx}" value="${p.kurang || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'kurang', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+                <td style="text-align:center; font-weight:800; font-size:0.85rem; color:#292524; background:#fafaf9;">${totalStok}</td>
+                <td style="text-align:center;"><input type="number" class="input-stok input-malam" id="malam_${idx}" value="${p.sisa}" min="0" oninput="updateNilaiStokLokal(${idx}, 'sisa', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+                <td style="text-align:right; font-weight:600;">${new Intl.NumberFormat('id-ID').format(p.jual)}</td>
+                <td style="text-align:center;">${actionHTML}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function simpanStokOtomatis() { 
+        const tgl = document.getElementById('tglOps').value; 
+        if(isDataLocked(tgl)) return; 
+        if(!db) return; 
+        db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }).then(() => {
+            if (navigator.onLine) showToast('✅ Tersimpan otomatis!');
+        });
+    }
+
+    function simpanKasMasuk(isAutoTrigger = false) { 
+        const tgl = document.getElementById('tglOps').value; 
+        if(isDataLocked(tgl)) return; 
+        if(!db) return; 
+        const kasData = { 
+            cash: parseFloat(document.getElementById('inCash').value) || 0, 
+            qris: parseFloat(document.getElementById('inQris').value) || 0
+        }; 
+        db.collection('kasMasuk').doc(tgl).set(kasData).then(() => { 
+            if (isAutoTrigger && navigator.onLine) showToast('✅ Tersimpan otomatis!'); 
+        }); 
+    }
+
+    function loadKasMasukUI() { const kas = dbKasMasuk[document.getElementById('tglOps').value] || { cash: 0, qris: 0 }; document.getElementById('inCash').value = kas.cash; document.getElementById('inQris').value = kas.qris; }
+
+    function updateKalkulasi() {
+        const tgl = document.getElementById('tglOps').value; 
+        if (!dbStok[tgl] || !Array.isArray(dbStok[tgl])) return;
+        const items = dbStok[tgl];
+
+        let totalOmset = 0, totalModalBelanja = 0, totalProfit = 0; 
+        
+        items.forEach(p => { 
+            const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang;
+            const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null; 
+            if (sisa !== null && sisa <= totalStok) { 
+                const terjual = totalStok - sisa; 
+                totalOmset += (terjual * p.jual); 
+                totalModalBelanja += (terjual * p.modal); 
+                totalProfit += (terjual * p.margin); 
+            } 
+        });
+        
+        const cashInput = parseFloat(document.getElementById('inCash').value) || 0;
+        const qrisInput = parseFloat(document.getElementById('inQris').value) || 0;
+        
+        const totalUangSeharusnya = totalOmset;
+        const totalUangFisikDigital = cashInput + qrisInput; 
+        const selisih = totalUangFisikDigital - totalUangSeharusnya;
+        
+        document.getElementById('txtUangSeharusnya').innerText = formatRupiah(totalUangSeharusnya); 
+        document.getElementById('txtAktualUang').innerText = formatRupiah(totalUangFisikDigital); 
+        
+        const elSelisih = document.getElementById('txtSelisih');
+        const boxEstimasi = document.getElementById('boxEstimasiEsTeh');
+        
+        if (selisih < 0) { 
+            elSelisih.innerText = "- " + formatRupiah(Math.abs(selisih)); elSelisih.style.color = "#dc2626"; 
+            boxEstimasi.innerHTML = `<span style="color:#dc2626;">⚠️ Uang Aktual <strong>KURANG</strong> dari Omset Sistem.</span>`;
+        } 
+        else if (selisih > 0) { 
+            elSelisih.innerText = "+ " + formatRupiah(selisih); elSelisih.style.color = "#16a34a"; 
+            boxEstimasi.innerHTML = `<span style="color:#16a34a;">✨ Uang Aktual <strong>LEBIH</strong> dari Omset Sistem.</span>`;
+        } 
+        else { 
+            elSelisih.innerText = "Rp 0 (Pas)"; elSelisih.style.color = "#292524"; 
+            boxEstimasi.innerHTML = `<span style="color:#78716c;">✅ Tidak ada selisih. Uang sesuai Omset!</span>`;
+        }
+
+        document.getElementById('allocModalBelanja').innerText = formatRupiah(totalModalBelanja); 
+        document.getElementById('totalProfitBersih').innerText = formatRupiah(totalProfit); 
+        
+        let basisAlokasi = Math.max(0, totalProfit);
+        document.getElementById('allocPartner').innerText = formatRupiah(basisAlokasi * 0.40); 
+        document.getElementById('allocOwner').innerText = formatRupiah(basisAlokasi * 0.60); 
+        
+        hitungAkumulasiKasTotal(); 
+        renderViewRekapTransfer(); 
+
+        if (currentUser && currentUser.role === 'owner') { if(document.getElementById('viewDashboard').style.display === 'block') renderDashboardGrafik(); }
+    }
+
+    function renderViewRekapTransfer() {
+        const tgl = document.getElementById('tglOps').value; const items = dbStok[tgl] || []; 
+        let totalModalBelanja = 0, profitBersih = 0;
+        
+        items.forEach(p => { 
+            const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang;
+            const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null; 
+            if (sisa !== null && sisa <= totalStok) { 
+                const terjual = totalStok - sisa; 
+                profitBersih += (terjual * p.margin); 
+                totalModalBelanja += (terjual * p.modal); 
+            } 
+        });
+        
+        const alokasiBasis = Math.max(0, profitBersih); 
+        const hakPartner = alokasiBasis * 0.40; 
+        const hakOwner = alokasiBasis * 0.60; 
+        
+        const totalA = totalModalBelanja + hakPartner + hakOwner;
+        
+        document.getElementById('rtKasModal').innerText = formatRupiah(totalModalBelanja); 
+        document.getElementById('rtKasPartner').innerText = formatRupiah(hakPartner); 
+        document.getElementById('rtKasOwner').innerText = formatRupiah(hakOwner); 
+        document.getElementById('rtTotalA').innerText = formatRupiah(totalA);
+        
+        const cashInput = parseFloat(document.getElementById('inCash').value) || 0;
+        const qrisInput = parseFloat(document.getElementById('inQris').value) || 0;
+        const totalB = cashInput + qrisInput;
+        
+        document.getElementById('rtCash').innerText = formatRupiah(cashInput); 
+        document.getElementById('rtQris').innerText = formatRupiah(qrisInput); 
+        document.getElementById('rtTotalB').innerText = formatRupiah(totalB);
+
+        const selisihSetor = totalB - totalA; 
+        const finalBox = document.getElementById('rtFinalBox'), finalValue = document.getElementById('rtFinalValue'), finalKet = document.getElementById('rtFinalKet');
+        
+        if (selisihSetor < 0) { 
+            finalBox.style.background = '#fff1f2'; finalBox.style.border = '2px solid #fda4af'; 
+            finalValue.style.color = '#be123c'; finalValue.innerText = "- " + formatRupiah(Math.abs(selisihSetor)); 
+            finalKet.style.color = '#9f1239'; finalKet.innerText = "⚠️ SELISIH KURANG! Uang aktual kurang dari omset sistem."; 
+        } 
+        else if (selisihSetor === 0) { 
+            finalBox.style.background = '#f0fdf4'; finalBox.style.border = '2px solid #86efac'; 
+            finalValue.style.color = '#15803d'; finalValue.innerText = formatRupiah(0); 
+            finalKet.style.color = '#166534'; finalKet.innerText = "✅ BALANCE PERFECT!"; 
+        } 
+        else { 
+            finalBox.style.background = '#eff6ff'; finalBox.style.border = '2px solid #93c5fd'; 
+            finalValue.style.color = '#1d4ed8'; finalValue.innerText = `+ ${formatRupiah(selisihSetor)}`; 
+            finalKet.style.color = '#1e3a8a'; finalKet.innerText = "✨ SELISIH LEBIH! Ada surplus uang aktual."; 
+        }
+    }
+
+    function hitungAkumulasiKasTotal() { 
+        let kasModal = 0, kasPartner = 0, kasOwner = 0; 
+        const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
+        validDates.forEach(tgl => { 
+            let pKotor = 0, modalB = 0; 
+            dbStok[tgl].forEach(p => { 
+                const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang;
+                const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null; 
+                if (sisa !== null && sisa <= totalStok) { 
+                    const terjual = totalStok - sisa; pKotor += (terjual * p.margin); modalB += (terjual * p.modal);
+                } 
+            }); 
+            const basis = Math.max(0, pKotor); 
+            kasModal += modalB; kasPartner += (basis * 0.40); kasOwner += (basis * 0.60); 
+        }); 
+        dbLogKas.forEach(l => { 
+            const n = l.tipe === 'masuk' ? l.nominal : -l.nominal; 
+            if (l.jenis === 'Modal Belanja') kasModal += n; 
+            else if (l.jenis === 'Hak Partner') kasPartner += n; 
+            else if (l.jenis === 'Hak Owner') kasOwner += n; 
+        }); 
+        document.getElementById('sbKasModal').innerText = formatRupiah(kasModal); document.getElementById('sbKasPartner').innerText = formatRupiah(kasPartner); document.getElementById('sbKasOwner').innerText = formatRupiah(kasOwner); 
+        renderMutasiTabKas(activeKasTab); 
+    }
+    
+    function gantiTabKas(jenis, el) { activeKasTab = jenis; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(el) el.classList.add('active'); renderMutasiTabKas(jenis); }
+    
+    function renderMutasiTabKas(jenis) { 
+        document.getElementById('txtNamaTabKas').innerText = `Dompet ${jenis}`; const tbody = document.getElementById('tbodyMutasiKas'); tbody.innerHTML = ''; 
+        let mutasiList = []; const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
+        validDates.forEach(tgl => { 
+            let pKotor = 0, modalB = 0; 
+            dbStok[tgl].forEach(p => { 
+                const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang;
+                const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null; 
+                if (sisa !== null && sisa <= totalStok) { 
+                    const terjual = totalStok - sisa; pKotor += (terjual * p.margin); modalB += (terjual * p.modal);
+                } 
+            }); 
+            const pB = Math.max(0, pKotor); 
+            if (jenis === 'Modal Belanja' && modalB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Modal Terkumpul', nominal: modalB, auto: true }); 
+            else if (jenis === 'Hak Partner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Hak Partner (40%)', nominal: pB * 0.40, auto: true }); 
+            else if (jenis === 'Hak Owner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Hak Anda (60%)', nominal: pB * 0.60, auto: true }); 
+        }); 
+        dbLogKas.forEach(l => { if (l.jenis === jenis) mutasiList.push({ ...l, auto: false }); }); 
+        mutasiList.sort((a, b) => a.tgl.localeCompare(b.tgl)); 
+        let saldo = 0; 
+        mutasiList.forEach(m => { 
+            saldo += (m.tipe === 'masuk' ? m.nominal : -m.nominal); 
+            const tr = document.createElement('tr'); tr.innerHTML = `<td>${m.tgl}</td><td><span style="color:${m.tipe==='masuk'?'#16a34a':'#dc2626'}; font-weight:800; font-size:0.65rem;">${m.tipe==='masuk'?'🟢 IN':'🔴 OUT'}</span></td><td style="font-weight:600;">${m.ket}</td><td style="font-weight:800; text-align:right;">${formatRupiah(m.nominal)}</td><td style="font-weight:800; color:#2563eb; text-align:right;">${formatRupiah(saldo)}</td><td style="text-align:center;">${!m.auto ? `<button onclick="hapusMutasiKas('${m.id}')" class="btn btn-danger" style="padding:4px; font-size:0.6rem;">Del</button>` : `<small style="font-weight:bold; color:#78716c;">Auto</small>`}</td>`; tbody.appendChild(tr); 
+        }); 
+        document.getElementById('txtTotalTabKas').innerText = formatRupiah(saldo); 
+    }
+    
+    function hapusMutasiKas(docId) { if(db && confirm("Hapus kas ini?")) db.collection('logKas').doc(docId).delete(); }
+
+    function bukaModalKelolaProduk() { document.getElementById('editIndexProduk').value="-1"; document.getElementById('inputNamaProduk').value=""; document.getElementById('inputKemasanProduk').value=""; document.getElementById('inputVarianProduk').value=""; document.getElementById('inputModalProduk').value=""; document.getElementById('inputJualProduk').value=""; document.getElementById('inputMarginProduk').value=""; document.getElementById('btnSimpanProduk').innerText="Simpan"; renderTabelMasterProduk(); document.getElementById('modalKelolaProduk').classList.add('active'); }
+    function tutupModalKelolaProduk() { document.getElementById('modalKelolaProduk').classList.remove('active'); }
+    function hitungMarginForm() { document.getElementById('inputMarginProduk').value=Math.max(0,(parseFloat(document.getElementById('inputJualProduk').value)||0)-(parseFloat(document.getElementById('inputModalProduk').value)||0)); }
+    function simpanProdukBaru(e) { e.preventDefault(); const p={nama:document.getElementById('inputNamaProduk').value.trim(), kemasan:document.getElementById('inputKemasanProduk').value.trim(), varian:document.getElementById('inputVarianProduk').value.trim(), modal:parseFloat(document.getElementById('inputModalProduk').value)||0, jual:parseFloat(document.getElementById('inputJualProduk').value)||0, margin:0}; p.margin=p.jual-p.modal; const idx=parseInt(document.getElementById('editIndexProduk').value); if(idx>=0) masterProduk[idx]=p; else masterProduk.push(p); if(db)db.collection('appData').doc('masterProduk').set({list:masterProduk}).then(()=>{bukaModalKelolaProduk();alert("Berhasil!");}); else{bukaModalKelolaProduk();alert("Lokal OK");} }
+    function renderTabelMasterProduk() { const t=document.getElementById('tbodyMasterProduk'); t.innerHTML=''; masterProduk.forEach((p,i)=>{ const txtKemasan = p.kemasan ? `<br><small>${p.kemasan}</small>` : ''; const txtVarian = p.varian ? ` <span style="font-size:0.65rem; color:#78716c;">(${p.varian})</span>` : ''; t.innerHTML+=`<tr><td>${i+1}</td><td><strong>${p.nama}</strong>${txtVarian}${txtKemasan}</td><td>${p.modal}</td><td>${p.jual}</td><td style="display:flex; gap:4px; padding-top:10px;"><button onclick="editProdukMaster(${i})" class="btn btn-warning" style="padding:4px; font-size:0.7rem; margin:0;">✏️</button><button onclick="hapusProdukMaster(${i})" class="btn btn-danger" style="padding:4px; font-size:0.7rem; margin:0;">🗑️</button></td></tr>`; }); }
+    function editProdukMaster(i) { const p=masterProduk[i]; document.getElementById('editIndexProduk').value=i; document.getElementById('inputNamaProduk').value=p.nama; document.getElementById('inputKemasanProduk').value=p.kemasan||''; document.getElementById('inputVarianProduk').value=p.varian||''; document.getElementById('inputModalProduk').value=p.modal; document.getElementById('inputJualProduk').value=p.jual; hitungMarginForm(); document.getElementById('btnSimpanProduk').innerText="Update"; }
+    function hapusProdukMaster(i) { if(confirm("Hapus dari master?")){ masterProduk.splice(i,1); if(db)db.collection('appData').doc('masterProduk').set({list:masterProduk}); renderTabelMasterProduk(); } }
+    function hapusProduk(i) { if(isDataLocked(document.getElementById('tglOps').value)) return; if(confirm("Sembunyikan produk ini hari ini?")) { const tgl = document.getElementById('tglOps').value; dbStok[tgl].splice(i,1); if(db) db.collection('stokHarian').doc(tgl).set({items: dbStok[tgl]}); renderTabelMatriks(); updateKalkulasi(); } }
+
+    function bukaModalKas(jenis, tipe) { document.getElementById('modalJenisKas').value=jenis; document.getElementById('modalTipeTx').value=tipe; document.getElementById('modalKasJudul').innerText=`⚡ Dompet ${jenis}`; document.getElementById('modalKas').classList.add('active'); }
+    function tutupModalKas() { document.getElementById('modalKas').classList.remove('active'); }
+    function prosesTransaksiKas(e) { e.preventDefault(); if(!db)return; db.collection('logKas').add({ tgl:document.getElementById('tglOps').value, jenis:document.getElementById('modalJenisKas').value, tipe:document.getElementById('modalTipeTx').value, nominal:parseFloat(document.getElementById('modalNominalTx').value)||0, ket:document.getElementById('modalKetTx').value }).then(tutupModalKas); }
+
+    function renderDashboardGrafik() {
+        const allDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
+        const last7Dates = allDates.slice(-7);
+        if(last7Dates.length === 0) return;
+
+        let totalOmset = 0, totalProfit = 0;
+        let labelsTren = [], dataOmset = [], dataProfitLine = [];
+
+        last7Dates.forEach(tgl => {
+            labelsTren.push(tgl.slice(-2) + '/' + tgl.slice(5,7));
+            let harianOmset = 0, harianProfitKotor = 0;
+            let items = dbStok[tgl] || [];
+            
+            items.forEach(p => {
+                const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang;
+                const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null;
+                if(sisa !== null && sisa <= totalStok) {
+                    const laku = totalStok - sisa; 
+                    harianOmset += (laku * p.jual); 
+                    harianProfitKotor += (laku * p.margin);
+                }
+            });
+            
+            totalOmset += harianOmset; totalProfit += harianProfitKotor;
+            dataOmset.push(harianOmset); dataProfitLine.push(harianProfitKotor);
+        });
+
+        document.getElementById('dashTotalOmset').innerText = formatRupiah(totalOmset);
+        document.getElementById('dashTotalProfit').innerText = formatRupiah(totalProfit);
+
+        Chart.register(ChartDataLabels);
+        const formatSingkatan = function(value) {
+            if (value === 0 || !value) return '';
+            if (value >= 1000000) { let j = value / 1000000; return (j % 1 === 0 ? j : j.toFixed(1).replace('.', ',')) + ' Jt'; } 
+            else if (value >= 1000) { let rb = value / 1000; return (rb % 1 === 0 ? rb : rb.toFixed(1).replace('.', ',')) + ' Rb'; }
+            return value.toString();
+        };
+
+        if(chartTren) chartTren.destroy();
+        const ctxTren = document.getElementById('chartTren').getContext('2d');
+        chartTren = new Chart(ctxTren, {
+            type: 'bar',
+            data: {
+                labels: labelsTren,
+                datasets: [
+                    { type: 'line', label: 'Profit Bersih', data: dataProfitLine, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 2.5, tension: 0.3, pointRadius: 4, datalabels: { align: 'top', anchor: 'end', color: '#15803d', font: { weight: 'bold', size: 10 }, formatter: formatSingkatan } },
+                    { type: 'bar', label: 'Omset Harian', data: dataOmset, backgroundColor: '#f59e0b', borderRadius: 4, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 9 }, formatter: formatSingkatan } }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 20 } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } }, datalabels: { display: true } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, display: false } } }
+        });
+    }
+
+    function bukaModalCetakPeriode(jenis) { toggleSidebar(); document.getElementById('jenisCetakPeriode').value = jenis; if(jenis === 'mingguan') { document.getElementById('modalCetakJudul').innerText = "📊 Cetak Rekap Mingguan"; document.getElementById('formCetakMingguan').style.display = 'block'; document.getElementById('formCetakBulanan').style.display = 'none'; } else { document.getElementById('modalCetakJudul').innerText = "📈 Cetak Rekap Bulanan"; document.getElementById('formCetakMingguan').style.display = 'none'; document.getElementById('formCetakBulanan').style.display = 'block'; } document.getElementById('modalCetakPeriode').classList.add('active'); }
+    function tutupModalCetakPeriode() { document.getElementById('modalCetakPeriode').classList.remove('active'); }
+    
+    function eksekusiCetakPeriode() { if (typeof html2pdf === 'undefined') return; tutupModalCetakPeriode(); const jenis = document.getElementById('jenisCetakPeriode').value; let validKeys = []; let judulKet = ""; if (jenis === 'mingguan') { const start = document.getElementById('cetakTglAwal').value; const end = document.getElementById('cetakTglAkhir').value; if(!start || !end) return; Object.keys(dbStok).forEach(tgl => { if(tgl >= start && tgl <= end) validKeys.push(tgl); }); judulKet = `Periode: ${start} s/d ${end}`; } else { const bln = document.getElementById('cetakBulan').value; if(!bln) return; Object.keys(dbStok).forEach(tgl => { if(tgl.startsWith(bln)) validKeys.push(tgl); }); judulKet = `Periode: Bulan ${bln}`; } let omsetTotal = 0, modalTotal = 0, profitTotal = 0; let rekapProduk = masterProduk.map(p => ({ ...p, totalTerjual: 0, totalOmset: 0, totalProfit: 0 })); validKeys.forEach(tgl => { dbStok[tgl].forEach((p, idx) => { const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang; const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null; if (sisa !== null && sisa <= totalStok) { const terjual = totalStok - sisa; if(rekapProduk[idx]) { rekapProduk[idx].totalTerjual += terjual; rekapProduk[idx].totalOmset += (terjual * p.jual); rekapProduk[idx].totalProfit += (terjual * p.margin); } modalTotal += (terjual * p.modal); profitTotal += (terjual * p.margin); omsetTotal += (terjual * p.jual); } }); }); const basisAlokasiPdf = Math.max(0, profitTotal); const hakPartner = basisAlokasiPdf * 0.40; const hakOwner = basisAlokasiPdf * 0.60; const ownerDikurangi = hakOwner - 25000; document.getElementById('pdfJudulPeriode').innerText = jenis === 'mingguan' ? 'LAPORAN MINGGUAN' : 'LAPORAN BULANAN'; document.getElementById('pdfTglPeriode').innerText = judulKet; document.getElementById('pdfTotalOmset').innerText = formatRupiah(omsetTotal); document.getElementById('pdfTotalModal').innerText = formatRupiah(modalTotal); document.getElementById('pdfTotalProfitBersih').innerText = formatRupiah(profitTotal); document.getElementById('pdfAllocPartner').innerText = formatRupiah(hakPartner); document.getElementById('pdfAllocOwner').innerText = formatRupiah(hakOwner) + (jenis==='mingguan' ? " - Rp 25k = " + formatRupiah(ownerDikurangi) : ''); const pdfTbody = document.getElementById('pdfTbodyProdukPeriode'); pdfTbody.innerHTML = ''; rekapProduk.filter(p => p.totalTerjual > 0).forEach(p => { pdfTbody.innerHTML += `<tr><td><strong>${p.nama}</strong><br><small style="color:#78716c">${p.kemasan||''}</small></td><td>${p.varian||'-'}</td><td style="text-align:center;">${p.totalTerjual}</td><td style="text-align:right;">${formatRupiah(p.totalOmset)}</td><td style="text-align:right;">${formatRupiah(p.totalProfit)}</td></tr>`; }); const element = document.getElementById('pdfAreaPeriode'); element.style.display = 'block'; html2pdf().set({ margin: 5, filename: `Rekap_${jenis}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { element.style.display = 'none'; }); }
+    
+    function generatePDFHarian() { if (typeof html2pdf === 'undefined') return; const tgl = document.getElementById('tglOps').value; const isOwner = currentUser && currentUser.role === 'owner'; document.getElementById('pdfHrTitleProfit').style.display = isOwner ? 'block' : 'none'; document.getElementById('pdfHrBoxProfit').style.display = isOwner ? 'block' : 'none'; const pdfTHead = document.getElementById('pdfTHeadHarianBarang'); pdfTHead.innerHTML = `<tr><th>Produk</th><th style="text-align:center;">Laku</th><th style="text-align:right;">Omset</th>${isOwner ? '<th style="text-align:right;">Profit</th>' : ''}</tr>`; const kas = dbKasMasuk[tgl] || { cash: 0, qris: 0 }; const totalMasuk = (kas.cash||0)+(kas.qris||0); document.getElementById('pdfHariTgl').innerText = `Tanggal: ${tgl}`; document.getElementById('pdfHrCash').innerText = formatRupiah(kas.cash); document.getElementById('pdfHrQris').innerText = formatRupiah(kas.qris); document.getElementById('pdfHrTotalMasuk').innerText = formatRupiah(totalMasuk); let profitKotor = 0, uangModal = 0; const pdfTbody = document.getElementById('pdfTbodyHarianBarang'); pdfTbody.innerHTML = ''; (dbStok[tgl] || []).forEach(p => { const awal = parseFloat(p.awal) || 0; const tambah = parseFloat(p.tambah) || 0; const kurang = parseFloat(p.kurang) || 0; const totalStok = awal + tambah - kurang; const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null; if (sisa !== null && sisa <= totalStok) { const laku = totalStok - sisa; if(laku > 0) { const o = laku * p.jual; const pr = laku * p.margin; profitKotor += pr; uangModal += (laku * p.modal); const txtVarian = p.varian ? ` (${p.varian})` : ''; pdfTbody.innerHTML += `<tr><td><strong>${p.nama}</strong><small style="color:#78716c;">${txtVarian}</small><br><small style="color:#78716c;">${p.kemasan||''}</small></td><td style="text-align:center;">${laku}</td><td style="text-align:right;">${formatRupiah(o)}</td>${isOwner ? `<td style="text-align:right;">${formatRupiah(pr)}</td>` : ''}</tr>`; } } }); const basis = Math.max(0, profitKotor); document.getElementById('pdfHrModalBelanja').innerText = formatRupiah(uangModal); document.getElementById('pdfHrBersih').innerText = formatRupiah(profitKotor); document.getElementById('pdfHrPartner').innerText = formatRupiah(basis * 0.40); document.getElementById('pdfHrOwner').innerText = formatRupiah(basis * 0.60); const element = document.getElementById('pdfAreaHarian'); element.style.display = 'block'; html2pdf().set({ margin: 5, filename: `Kasir_Harian_${tgl}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { element.style.display = 'none'; }); }
+    
+    function generatePDFTransfer() { 
+        if (typeof html2pdf === 'undefined') return; 
+        document.getElementById('pdfStrukTgl').innerText = 'Tanggal: ' + document.getElementById('tglOps').value; 
+        
+        document.getElementById('stKasModal').innerText = document.getElementById('rtKasModal').innerText; 
+        document.getElementById('stPartner').innerText = document.getElementById('rtKasPartner').innerText; 
+        document.getElementById('stOwner').innerText = document.getElementById('rtKasOwner').innerText; 
+        document.getElementById('stTotalA').innerText = document.getElementById('rtTotalA').innerText; 
+        
+        document.getElementById('stCash').innerText = document.getElementById('rtCash').innerText;
+        document.getElementById('stQris').innerText = document.getElementById('rtQris').innerText; 
+        document.getElementById('stTotalB').innerText = document.getElementById('rtTotalB').innerText; 
+        
+        const valStruk = document.getElementById('rtFinalValue').innerText; 
+        document.getElementById('stFinalValue').innerText = valStruk; 
+        const boxStatus = document.getElementById('boxStatusSetor'); 
+        
+        if (valStruk.includes('+')) { 
+            document.getElementById('stFinalKet').innerText = "SELISIH LEBIH (SURPLUS)"; 
+            document.getElementById('stFinalValue').style.color = "#1d4ed8"; boxStatus.style.borderColor = "#93c5fd"; boxStatus.style.background = "#eff6ff"; 
+        } else if (valStruk === "Rp 0") { 
+            document.getElementById('stFinalKet').innerText = "BALANCE PERFECT"; 
+            document.getElementById('stFinalValue').style.color = "#15803d"; boxStatus.style.borderColor = "#86efac"; boxStatus.style.background = "#f0fdf4"; 
+        } else { 
+            document.getElementById('stFinalKet').innerText = "SELISIH KURANG (MINUS)"; 
+            document.getElementById('stFinalValue').style.color = "#be123c"; boxStatus.style.borderColor = "#fda4af"; boxStatus.style.background = "#fff1f2"; 
+        } 
+        
+        const element = document.getElementById('pdfAreaTransfer'); 
+        element.style.display = 'block'; 
+        html2pdf().set({ margin: 5, filename: `Laporan_Transfer_${document.getElementById('tglOps').value}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { element.style.display = 'none'; }); 
+    }
+
+    function downloadTemplatePagi() { const tgl = document.getElementById('tglOps').value; let csv = 'Nama Dasar;Kemasan;Varian;Stok Awal;Tambah;Kurang;Stok Sisa\n'; (dbStok[tgl] || masterProduk).forEach(p => { csv += `${p.nama};${p.kemasan||''};${p.varian||''};${p.awal || 0};${p.tambah || 0};${p.kurang || 0};${p.sisa || ""}\n`; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Stok_Harian_${tgl}.csv`; link.click(); }
+    
+    function importStokPagi(event) { if(isDataLocked(document.getElementById('tglOps').value)) { alert("Data terkunci!"); return; } const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const tgl = document.getElementById('tglOps').value; if (!dbStok[tgl]) syncStokDenganMaster(tgl); e.target.result.split('\n').forEach((line, index) => { if (index === 0 || !line.trim()) return; const cols = line.split(';'); if (cols.length >= 4) { const idx = dbStok[tgl].findIndex(p => p.nama.toLowerCase() === cols[0].trim().toLowerCase() && (p.kemasan||'').toLowerCase() === cols[1].trim().toLowerCase() && (p.varian||'').toLowerCase() === cols[2].trim().toLowerCase()); if (idx !== -1) { dbStok[tgl][idx].awal = cols[3].trim(); if (cols[4]) dbStok[tgl][idx].tambah = cols[4].trim(); if (cols[5]) dbStok[tgl][idx].kurang = cols[5].trim(); if (cols[6]) dbStok[tgl][idx].sisa = cols[6].trim(); } } }); if(db) db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }).then(() => { renderTabelMatriks(); updateKalkulasi(); alert('✅ Import OK'); }); else { renderTabelMatriks(); updateKalkulasi(); alert('✅ Import Lokal OK'); } }; reader.readAsText(file); }
+</script>
+</body>
+</html>
