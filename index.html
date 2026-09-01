@@ -791,30 +791,56 @@
     }
 
     function syncStokDenganMaster(tgl) { 
-        if (!dbStok[tgl]) { 
-            dbStok[tgl] = masterProduk.map(p => ({ ...p, awal: "", tambah: "", kurang: "", sisa: "" })); 
-        } else { 
-            let currentStok = dbStok[tgl], newStokList = []; 
-            masterProduk.forEach(mp => { 
-                let found = currentStok.find(item => item.nama === mp.nama && item.kemasan === mp.kemasan && item.varian === mp.varian);
-                if(!found) found = currentStok.find(item => item.nama === mp.nama);
-                
-                if (found) newStokList.push({ ...mp, awal: found.awal, tambah: found.tambah || "", kurang: found.kurang || "", sisa: found.sisa }); 
-                else newStokList.push({ ...mp, awal: "", tambah: "", kurang: "", sisa: "" }); 
-            }); 
-            dbStok[tgl] = newStokList; 
-        } 
-    }
-    
+    if (!dbStok[tgl]) { 
+        dbStok[tgl] = masterProduk.map(p => ({ ...p, awal: "", tambah: "", kurang: "", terjual: "", sisa: "" })); 
+    } else { 
+        let currentStok = dbStok[tgl], newStokList = []; 
+        masterProduk.forEach(mp => { 
+            let found = currentStok.find(item => item.nama === mp.nama && item.kemasan === mp.kemasan && item.varian === mp.varian);
+            if(!found) found = currentStok.find(item => item.nama === mp.nama);
+            
+            // Tambahkan property 'terjual' di sini agar data tidak hilang saat direfresh
+            if (found) newStokList.push({ ...mp, awal: found.awal, tambah: found.tambah || "", kurang: found.kurang || "", terjual: found.terjual || "", sisa: found.sisa }); 
+            else newStokList.push({ ...mp, awal: "", tambah: "", kurang: "", terjual: "", sisa: "" }); 
+        }); 
+        dbStok[tgl] = newStokList; 
+    } 
+}
     function updateNilaiStokLokal(idx, tipe, val) { 
-        const tgl = document.getElementById('tglOps').value; 
-        if (!dbStok[tgl]) syncStokDenganMaster(tgl); 
-        if (tipe === 'awal') dbStok[tgl][idx].awal = val; 
-        if (tipe === 'tambah') dbStok[tgl][idx].tambah = val; 
-        if (tipe === 'kurang') dbStok[tgl][idx].kurang = val; 
-        if (tipe === 'sisa') dbStok[tgl][idx].sisa = val; 
-        updateKalkulasi(); 
+    const tgl = document.getElementById('tglOps').value; 
+    if (!dbStok[tgl]) syncStokDenganMaster(tgl); 
+    
+    // 1. Simpan nilai yang diketik kasir ke dalam memori
+    if (tipe === 'awal') dbStok[tgl][idx].awal = val; 
+    if (tipe === 'tambah') dbStok[tgl][idx].tambah = val; 
+    if (tipe === 'kurang') dbStok[tgl][idx].kurang = val; 
+    if (tipe === 'terjual') dbStok[tgl][idx].terjual = val; 
+    
+    const p = dbStok[tgl][idx];
+    const awal = parseFloat(p.awal) || 0;
+    const tambah = parseFloat(p.tambah) || 0;
+    const kurang = parseFloat(p.kurang) || 0;
+    const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : null;
+    
+    // 2. Rumus: Total = (Awal + Penambahan - Pengurangan)
+    const totalStok = awal + tambah - kurang;
+    
+    // 3. Kalkulasi SISA otomatis (agar laporan PDF & Omset tidak perlu diubah)
+    if (terjual !== null) {
+        p.sisa = totalStok - terjual; 
+    } else {
+        p.sisa = ""; 
     }
+
+    // 4. Ubah angka di layar secara instan (tanpa lag)
+    const cellTotal = document.getElementById(`text_total_${idx}`);
+    const cellSisa = document.getElementById(`text_sisa_${idx}`);
+    
+    if (cellTotal) cellTotal.innerText = totalStok;
+    if (cellSisa) cellSisa.innerText = p.sisa === "" ? "-" : p.sisa;
+
+    updateKalkulasi(); 
+}
     
     function loadDataTanggalLocal() { 
         const tgl = document.getElementById('tglOps').value; 
@@ -838,51 +864,61 @@
         if (document.activeElement && document.activeElement.tagName !== 'INPUT') { renderTabelMatriks(); } 
     }
 
-    function renderTabelMatriks() {
-        const tgl = document.getElementById('tglOps').value; const locked = isDataLocked(tgl);
-        const thead = document.getElementById('theadMatriks');
+   function renderTabelMatriks() {
+    const tgl = document.getElementById('tglOps').value; const locked = isDataLocked(tgl);
+    const thead = document.getElementById('theadMatriks');
+    
+    // 1. Ubah Header Tabel
+    thead.innerHTML = `<tr>
+        <th style="text-align:left;">Nama & Kemasan</th>
+        <th style="text-align:left;">Varian</th>
+        <th style="background:#fef9c3; color:#854d0e;">Awal</th>
+        <th style="background:#dcfce7; color:#166534; font-size: 0.9rem;">+</th>
+        <th style="background:#fee2e2; color:#991b1b; font-size: 0.9rem;">-</th>
+        <th style="background:#f5f5f4; color:#292524; font-size: 0.8rem;">Total</th>
+        <th style="background:#e0f2fe; color:#0369a1;">Terjual</th>
+        <th style="background:#e7e5e4; color:#44403c;">Sisa</th>
+        <th>Harga</th>
+        <th>Aksi</th>
+    </tr>`;
+    
+    const tbody = document.getElementById('tbodyMatriks'); tbody.innerHTML = '';
+    
+    (dbStok[tgl] || []).forEach((p, idx) => {
+        const awal = (p.awal !== "" && p.awal !== null) ? parseFloat(p.awal) : 0; 
+        const tambah = (p.tambah !== "" && p.tambah !== null && p.tambah !== undefined) ? parseFloat(p.tambah) : 0;
+        const kurang = (p.kurang !== "" && p.kurang !== null && p.kurang !== undefined) ? parseFloat(p.kurang) : 0;
         
-        thead.innerHTML = `<tr>
-            <th style="text-align:left;">Nama & Kemasan</th>
-            <th style="text-align:left;">Varian</th>
-            <th style="background:#fef9c3; color:#854d0e;">Awal</th>
-            <th style="background:#dcfce7; color:#166534; font-size: 0.9rem;">+</th>
-            <th style="background:#fee2e2; color:#991b1b; font-size: 0.9rem;">-</th>
-            <th style="background:#f5f5f4; color:#292524; font-size: 0.9rem;">=</th>
-            <th style="background:#e7e5e4; color:#44403c;">Sisa</th>
-            <th>Harga</th>
-            <th>Aksi</th>
-        </tr>`;
+        const totalStok = awal + tambah - kurang;
+        const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? p.terjual : "";
         
-        const tbody = document.getElementById('tbodyMatriks'); tbody.innerHTML = '';
+        // Hitung teks sisa untuk ditampilkan saat aplikasi pertama kali dibuka
+        let textSisa = "-";
+        if (terjual !== "") { textSisa = totalStok - parseFloat(terjual); }
         
-        (dbStok[tgl] || []).forEach((p, idx) => {
-            const awal = (p.awal !== "" && p.awal !== null) ? parseFloat(p.awal) : 0; 
-            const tambah = (p.tambah !== "" && p.tambah !== null && p.tambah !== undefined) ? parseFloat(p.tambah) : 0;
-            const kurang = (p.kurang !== "" && p.kurang !== null && p.kurang !== undefined) ? parseFloat(p.kurang) : 0;
-            const totalStok = awal + tambah - kurang;
-            
-            const actionHTML = locked ? '<span style="font-size:0.8rem;color:#a8a29e;">🔒</span>' : `<button onclick="hapusProduk(${idx})" class="btn btn-danger" style="padding:4px 6px; font-size:0.6rem; margin:0; border-radius:4px;">🗑️</button>`;
-            
-            const txtKemasan = p.kemasan ? `<br><small style="color:#78716c; font-weight:normal;">${p.kemasan}</small>` : '';
-            const txtVarian = p.varian || '-';
+        const actionHTML = locked ? '<span style="font-size:0.8rem;color:#a8a29e;">🔒</span>' : `<button onclick="hapusProduk(${idx})" class="btn btn-danger" style="padding:4px 6px; font-size:0.6rem; margin:0; border-radius:4px;">🗑️</button>`;
+        
+        const txtKemasan = p.kemasan ? `<br><small style="color:#78716c; font-weight:normal;">${p.kemasan}</small>` : '';
+        const txtVarian = p.varian || '-';
 
-            const tr = document.createElement('tr');
-            
-            tr.innerHTML = `
-                <td><div style="font-weight:700; color:var(--text-main); font-size:0.75rem;">${p.nama}</div>${txtKemasan}</td>
-                <td><div style="font-weight:600; color:#44403c; font-size:0.7rem;">${txtVarian}</div></td>
-                <td style="text-align:center;"><input type="number" class="input-stok input-pagi" id="pagi_${idx}" value="${p.awal}" min="0" oninput="updateNilaiStokLokal(${idx}, 'awal', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
-                <td style="text-align:center;"><input type="number" class="input-stok input-tambah" id="tambah_${idx}" value="${p.tambah || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'tambah', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
-                <td style="text-align:center;"><input type="number" class="input-stok input-kurang" id="kurang_${idx}" value="${p.kurang || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'kurang', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
-                <td style="text-align:center; font-weight:800; font-size:0.85rem; color:#292524; background:#fafaf9;">${totalStok}</td>
-                <td style="text-align:center;"><input type="number" class="input-stok input-malam" id="malam_${idx}" value="${p.sisa}" min="0" oninput="updateNilaiStokLokal(${idx}, 'sisa', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
-                <td style="text-align:right; font-weight:600;">${new Intl.NumberFormat('id-ID').format(p.jual)}</td>
-                <td style="text-align:center;">${actionHTML}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
+        const tr = document.createElement('tr');
+        
+        // 2. Susunan Kolom Input di dalam Tabel
+        tr.innerHTML = `
+            <td><div style="font-weight:700; color:var(--text-main); font-size:0.75rem;">${p.nama}</div>${txtKemasan}</td>
+            <td><div style="font-weight:600; color:#44403c; font-size:0.7rem;">${txtVarian}</div></td>
+            <td style="text-align:center;"><input type="number" class="input-stok input-pagi" id="pagi_${idx}" value="${p.awal}" min="0" oninput="updateNilaiStokLokal(${idx}, 'awal', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+            <td style="text-align:center;"><input type="number" class="input-stok input-tambah" id="tambah_${idx}" value="${p.tambah || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'tambah', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+            <td style="text-align:center;"><input type="number" class="input-stok input-kurang" id="kurang_${idx}" value="${p.kurang || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'kurang', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+            <td id="text_total_${idx}" style="text-align:center; font-weight:800; font-size:0.85rem; color:#292524; background:#fafaf9;">${totalStok}</td>
+            <td style="text-align:center;"><input type="number" class="input-stok" style="background:#f0f9ff; border-color:#bae6fd;" id="terjual_${idx}" value="${terjual}" min="0" oninput="updateNilaiStokLokal(${idx}, 'terjual', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
+            <td id="text_sisa_${idx}" style="text-align:center; font-weight:800; font-size:0.85rem; color:#44403c; background:#f5f5f4;">${textSisa}</td>
+            <td style="text-align:right; font-weight:600;">${new Intl.NumberFormat('id-ID').format(p.jual)}</td>
+            <td style="text-align:center;">${actionHTML}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
 
     function simpanStokOtomatis() { 
         const tgl = document.getElementById('tglOps').value; 
