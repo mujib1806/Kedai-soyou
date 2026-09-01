@@ -217,10 +217,12 @@
                 <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--border-color);">
                 
                 <div class="table-wrapper" style="max-height: none;"> <table class="table-freeze">
-                        <thead>
+                       <thead>
                             <tr>
                                 <th style="width:40px;">No</th>
-                                <th style="text-align:left;">Info Produk</th>
+                                <th style="text-align:left;">Nama Produk</th>
+                                <th style="text-align:left;">Kemasan</th>
+                                <th style="text-align:left;">Varian</th>
                                 <th>Modal</th>
                                 <th>Jual</th>
                                 <th>Margin</th>
@@ -1197,15 +1199,19 @@
         } 
     }
     
-    function renderTabelMasterProduk() { 
+   function renderTabelMasterProduk() { 
         const t = document.getElementById('tbodyMasterProduk'); 
         t.innerHTML = ''; 
         masterProduk.forEach((p,i) => { 
-            const txtKemasan = p.kemasan ? `<br><small style="color:#78716c;">${p.kemasan}</small>` : ''; 
-            const txtVarian = p.varian ? ` <span style="font-size:0.7rem; color:#b45309; font-weight:bold;">(${p.varian})</span>` : ''; 
+            // Jika kosong, tampilkan tanda strip (-)
+            const txtKemasan = p.kemasan ? p.kemasan : '-'; 
+            const txtVarian = p.varian ? p.varian : '-'; 
+            
             t.innerHTML += `<tr>
                 <td style="text-align:center;">${i+1}</td>
-                <td><div style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}${txtVarian}</div>${txtKemasan}</td>
+                <td style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}</td>
+                <td style="color:#57534e; font-size:0.75rem;">${txtKemasan}</td>
+                <td style="color:#b45309; font-weight:bold; font-size:0.75rem;">${txtVarian}</td>
                 <td>${formatRupiah(p.modal)}</td>
                 <td>${formatRupiah(p.jual)}</td>
                 <td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td>
