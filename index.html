@@ -494,6 +494,16 @@
                     <h2 style="color: #b45309; margin:0;">🏦 Rekap Transfer Dompet</h2>
                     <button onclick="generatePDFTransfer()" class="btn btn-pdf" style="width:auto; padding:6px 12px; font-size:0.75rem; margin:0; border-radius:12px;">🖨️ Cetak PDF</button>
                 </div>
+        <!-- 7. VIEW LAPORAN BARU -->
+        <div id="viewLaporanBaru" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #4ade80;">
+                <h2 style="color: #166534;">📊 Laporan Mingguan & Bulanan</h2>
+                <div style="padding: 20px; text-align: center; color: #78716c;">
+                    <span style="font-size: 2rem;">🚧</span><br>
+                    <b>Halaman sedang diracik...</b>
+                </div>
+            </div>
+        </div>
                 <div class="grid-mobile">
                     <div class="summary-box" style="background:#fafaf9; border-color:#d6d3d1;">
                         <h4 style="color:#44403c; font-size:0.85rem; font-weight:800; margin-bottom:10px; text-transform:uppercase;">📥 (A) Rincian Omset Seharusnya</h4>
@@ -690,40 +700,58 @@
     function cekDanBuatAkunMaster() { db.collection('users').get().then(snap => { if (snap.empty) { db.collection('users').doc('08111111111').set({ nama: 'Owner (Master)', hp: '08111111111', password: 'owner123', role: 'owner' }); } }); }
     function prosesLogin(e) { e.preventDefault(); const hp = document.getElementById('inLoginHp').value; const pass = document.getElementById('inLoginPass').value; const btn = document.getElementById('btnLoginBtn'); if(!db) { alert("Tidak ada koneksi ke database!"); return; } btn.innerText = "MEMERIKSA..."; btn.disabled = true; db.collection('users').doc(hp).get().then(doc => { if (doc.exists && doc.data().password === pass) { currentUser = doc.data(); localStorage.setItem('baksoUser', JSON.stringify(currentUser)); bukaLayarAplikasi(); } else { alert("Gagal Masuk! Nomor HP atau Password salah."); } btn.innerText = "MASUK"; btn.disabled = false; }).catch(err => { alert("Error: " + err.message); btn.innerText = "MASUK"; btn.disabled = false; }); }
     
-    function bukaLayarAplikasi() { 
-        document.getElementById('loginScreen').style.display = 'none'; document.getElementById('appScreen').style.display = 'block'; 
+function bukaLayarAplikasi() { 
+        document.getElementById('loginScreen').style.display = 'none'; 
+        document.getElementById('appScreen').style.display = 'block'; 
         document.getElementById('namaUserAktif').innerText = currentUser.nama; 
         
         const isOwner = currentUser.role === 'owner';
         document.getElementById('roleUserAktif').innerText = isOwner ? '👑 OWNER' : '🧑‍🍳 KASIR'; 
         
-        document.getElementById('menuOrderVendor').style.display = isOwner ? 'block' : 'none'; 
-        document.getElementById('menuTransfer').style.display = isOwner ? 'block' : 'none'; 
-        document.getElementById('menuMutasi').style.display = isOwner ? 'block' : 'none'; 
+        // Pengaturan Akses Menu Utama & Operasional
         document.getElementById('menuDashboard').style.display = isOwner ? 'block' : 'none'; 
+        document.getElementById('menuOrderVendor').style.display = isOwner ? 'block' : 'none'; 
         document.getElementById('menuProduk').style.display = 'block'; 
-        document.getElementById('menuKelolaAkun').style.display = isOwner ? 'block' : 'none'; 
-        document.getElementById('menuCetak1').style.display = isOwner ? 'block' : 'none'; 
-        document.getElementById('menuCetak2').style.display = isOwner ? 'block' : 'none'; 
+        
+        // Pengaturan Akses Grup Dropdown (Dompet & Laporan)
+        const grupDompet = document.getElementById('grupDompet');
+        if(grupDompet) grupDompet.style.display = isOwner ? 'block' : 'none';
+        
+        const grupLaporan = document.getElementById('grupLaporan');
+        if(grupLaporan) grupLaporan.style.display = isOwner ? 'block' : 'none';
         
         document.getElementById('cardAlokasiHarian').style.display = isOwner ? 'block' : 'none'; 
         
+        // Reset Tampilan Layar
         document.getElementById('viewHarian').style.display = 'block'; 
         document.getElementById('viewOrderVendor').style.display = 'none'; 
         document.getElementById('viewRekapTransfer').style.display = 'none'; 
         document.getElementById('viewMutasiKas').style.display = 'none'; 
         document.getElementById('viewDashboard').style.display = 'none'; 
+        document.getElementById('viewMasterProduk').style.display = 'none'; 
+        if(document.getElementById('viewLaporanBaru')) document.getElementById('viewLaporanBaru').style.display = 'none';
 
-        if (isOwner) { document.getElementById('viewDashboard').style.display = 'block'; document.getElementById('viewHarian').style.display = 'none'; } 
+        if (isOwner) { 
+            document.getElementById('viewDashboard').style.display = 'block'; 
+            document.getElementById('viewHarian').style.display = 'none'; 
+        } 
 
-        const today = new Date(); document.getElementById('tglOps').valueAsDate = today; 
-        document.getElementById('cetakTglAwal').valueAsDate = today; document.getElementById('cetakTglAkhir').valueAsDate = today; 
+        const today = new Date(); 
+        document.getElementById('tglOps').valueAsDate = today; 
+        document.getElementById('cetakTglAwal').valueAsDate = today; 
+        document.getElementById('cetakTglAkhir').valueAsDate = today; 
         document.getElementById('cetakBulan').value = today.toISOString().slice(0, 7); 
         
         try { inisiatisasiRealtimeListener(); } catch(e) { loadDataTanggalLocal(); } 
     }
     
- function prosesLogout() { if(confirm("Keluar dari aplikasi?")) { localStorage.removeItem('baksoUser'); currentUser = null; window.location.reload(); } }
+    function prosesLogout() { 
+        if(confirm("Keluar dari aplikasi?")) { 
+            localStorage.removeItem('baksoUser'); 
+            currentUser = null; 
+            window.location.reload(); 
+        } 
+    }
 
     function toggleDropdown(btn) {
         btn.classList.toggle("active");
@@ -732,25 +760,36 @@
         else { icon.innerText = "▼"; }
     }
 
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
-   function pilihMenuNav(jenis) { 
+    function toggleSidebar() { 
+        document.getElementById('sidebar').classList.toggle('active'); 
+        document.getElementById('overlay').classList.toggle('active'); 
+    }
+
+    function pilihMenuNav(jenis) { 
         toggleSidebar(); 
+        
+        // Sembunyikan Semua View
         document.getElementById('viewHarian').style.display = 'none'; 
         document.getElementById('viewOrderVendor').style.display = 'none'; 
         document.getElementById('viewRekapTransfer').style.display = 'none'; 
         document.getElementById('viewMutasiKas').style.display = 'none'; 
         document.getElementById('viewDashboard').style.display = 'none'; 
-        document.getElementById('viewMasterProduk').style.display = 'none'; // Tambahan Baru
+        document.getElementById('viewMasterProduk').style.display = 'none'; 
+        if(document.getElementById('viewLaporanBaru')) document.getElementById('viewLaporanBaru').style.display = 'none';
         
+        // Tampilkan View yang Dipilih
         if (jenis === 'harian') { document.getElementById('viewHarian').style.display = 'block'; } 
         else if (jenis === 'orderVendor') { document.getElementById('viewOrderVendor').style.display = 'block'; renderTabelOrderVendor(); }
         else if (jenis === 'rekapTransfer') { document.getElementById('viewRekapTransfer').style.display = 'block'; renderViewRekapTransfer(); } 
         else if (jenis === 'mutasiKas') { document.getElementById('viewMutasiKas').style.display = 'block'; hitungAkumulasiKasTotal(); }
         else if (jenis === 'dashboard') { document.getElementById('viewDashboard').style.display = 'block'; renderDashboardGrafik(); }
-        else if (jenis === 'masterProduk') { // Tambahan Baru
+        else if (jenis === 'masterProduk') { 
             document.getElementById('viewMasterProduk').style.display = 'block'; 
             resetFormMasterProduk(); 
             renderTabelMasterProduk(); 
+        }
+        else if (jenis === 'laporan') { 
+            if(document.getElementById('viewLaporanBaru')) document.getElementById('viewLaporanBaru').style.display = 'block'; 
         }
     }
     
