@@ -265,11 +265,14 @@
                         <div class="form-group"><label>Kemasan:</label><input type="text" id="inputKemasanProduk"></div>
                         <div class="form-group"><label>Varian:</label><input type="text" id="inputVarianProduk"></div>
                     </div>
-                    <div class="grid-mobile" style="margin-top:8px;">
+                   <div class="grid-mobile" style="margin-top:8px;">
                         <div class="form-group"><label>Modal (Rp):</label><input type="number" id="inputModalProduk" min="0" required oninput="hitungMarginForm()"></div>
                         <div class="form-group"><label>Jual (Rp):</label><input type="number" id="inputJualProduk" min="0" required oninput="hitungMarginForm()"></div>
                     </div>
-                    <div class="form-group"><label>Margin / Profit Bersih:</label><input type="number" id="inputMarginProduk" readonly style="color:#16a34a; font-weight:bold; background:#f0fdf4;"></div>
+                    <div class="grid-mobile">
+                        <div class="form-group"><label>Margin / Profit Bersih:</label><input type="number" id="inputMarginProduk" readonly style="color:#16a34a; font-weight:bold; background:#f0fdf4;"></div>
+                        <div class="form-group"><label>⚠️ Min. Stok (Batas Aman):</label><input type="number" id="inputMinStokProduk" min="0" value="5" required style="background:#fffbeb; border-color:#fde68a;"></div>
+                    </div>
                     <div style="display:flex; gap:8px; margin-top:12px;">
                         <button type="button" class="btn btn-danger" onclick="resetFormMasterProduk()">Batal / Reset</button>
                         <button type="submit" class="btn btn-success" id="btnSimpanProduk">Simpan Produk</button>
@@ -290,7 +293,8 @@
                                 <th style="cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('modal')">Modal <span id="sort_modal"></span></th>
                                 <th style="cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('jual')">Jual <span id="sort_jual"></span></th>
                                 <th style="cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('margin')">Margin <span id="sort_margin"></span></th>
-                                <th>Aksi</th>
+                                <th style="cursor:pointer; color:#b45309;" onclick="sortMasterProduk('minStok')">Min.Stok <span id="sort_minStok"></span></th>
+                                <th>Aksi</th>    
                             </tr>
                         </thead>
                         <tbody id="tbodyMasterProduk"></tbody>
@@ -321,15 +325,40 @@
             </div>
         </div>
 
-        <!-- 3. VIEW ORDER VENDOR -->
+       <!-- 3. VIEW ORDER VENDOR -->
         <div id="viewOrderVendor" style="display:none; margin-bottom: 40px;">
             <div class="card" style="border-top: 4px solid #3b82f6;">
+                
+                <!-- HEADER & TOMBOL AKSI -->
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
-                    <h2 style="color: #1d4ed8; margin:0;">📦 Form Order Vendor</h2>
-                    <button onclick="bukaModalVendor()" class="btn btn-warning" style="width:auto; padding:6px 12px; font-size:0.75rem; border-radius:8px; margin:0;">+ Tambah Produk</button>
+                    <h2 style="color: #1d4ed8; margin:0; font-size:1.1rem;">📦 Order Vendor</h2>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button onclick="bukaModalVendor()" class="btn btn-warning" style="width:auto; padding:6px 10px; font-size:0.75rem; margin:0; border-radius:8px;">+ Tambah</button>
+                        <button onclick="kirimOrderWA()" class="btn btn-success" style="width:auto; padding:6px 10px; font-size:0.75rem; margin:0; border-radius:8px;">📢 Kirim WA</button>
+                    </div>
                 </div>
+                
+                <!-- TABEL WARNING STOK -->
+                <div id="boxWarningStok" style="display:none; margin-bottom:15px; border:2px dashed #ef4444; border-radius:8px; padding:10px; background:#fef2f2;">
+                    <h3 style="color:#b91c1c; font-size:0.85rem; font-weight:800; margin-bottom:8px;">🚨 PERINGATAN STOK MENIPIS</h3>
+                    <div style="font-size:0.7rem; color:#991b1b; margin-bottom:8px;">Produk di bawah ini sisa stoknya sudah mencapai batas minimum. Segera rencanakan order!</div>
+                    <div class="table-wrapper" style="margin-bottom:0; max-height:200px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="background:#fee2e2; color:#991b1b; text-align:left;">Produk Kritis</th>
+                                    <th style="background:#fee2e2; color:#991b1b;">Sisa</th>
+                                    <th style="background:#fee2e2; color:#991b1b;">Batas</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyWarningStok"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TABEL ORDER MANUAL -->
                 <div style="font-size: 0.7rem; color: #1e40af; margin-bottom: 12px; font-weight: bold;">
-                    Silakan isi Qty. Harga bisa diedit jika ada perubahan dari supplier.
+                    📝 Silakan isi Qty. Harga bisa diedit jika ada perubahan dari supplier.
                 </div>
                 <div class="table-wrapper">
                     <table class="table-freeze">
@@ -347,18 +376,17 @@
                         <tbody id="tbodyOrderVendor"></tbody>
                     </table>
                 </div>
+                
+                <!-- GRAND TOTAL ORDER -->
                 <div class="summary-box" style="background:#eff6ff; border-color:#bfdbfe; margin-top:15px; padding:15px;">
                     <div class="summary-item bold" style="font-size:1.1rem; color:#1e3a8a; border:none; padding:0; margin:0;">
                         <span>GRAND TOTAL ORDER:</span>
                         <span id="txtGrandTotalOrder" style="font-weight:900;">Rp 0</span>
                     </div>
                 </div>
-                <button onclick="kirimOrderWA()" class="btn btn-success" style="margin-top:12px; padding:12px; font-size:1rem; border-radius:10px; font-weight:800; display:flex; justify-content:center; align-items:center; gap:8px;">
-                    Kirim Order via WA
-                </button>
+
             </div>
         </div>
-
         <!-- 4. VIEW HARIAN (STOK & KASIR) -->
         <div id="viewHarian" style="display:none;">
             <style>
@@ -954,6 +982,54 @@
         hitungTotalOrderVendor();
     }
 
+   function cekStokWarning() {
+        const tgl = document.getElementById('tglOps').value;
+        const items = dbStok[tgl] || [];
+        const tbodyWarn = document.getElementById('tbodyWarningStok');
+        const boxWarn = document.getElementById('boxWarningStok');
+        
+        if (!tbodyWarn || !boxWarn) return; 
+        
+        tbodyWarn.innerHTML = '';
+        let countWarning = 0;
+        
+        items.forEach(p => {
+            const awal = parseFloat(p.awal) || 0;
+            const tambah = parseFloat(p.tambah) || 0;
+            const kurang = parseFloat(p.kurang) || 0;
+            const totalStok = awal + tambah - kurang;
+            const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0;
+            let sisa = totalStok - terjual;
+            
+            // Cari data batas Min. Stok di master produk
+            let minS = 5; // Nilai default 
+            const m = masterProduk.find(x => x.nama === p.nama && x.kemasan === p.kemasan && x.varian === p.varian);
+            if (m && m.minStok !== undefined) {
+                minS = m.minStok;
+            } else {
+                const m2 = masterProduk.find(x => x.nama === p.nama);
+                if (m2 && m2.minStok !== undefined) minS = m2.minStok;
+            }
+            
+            // Jika sisa menyentuh batas minimum, masukkan ke tabel peringatan
+            if (sisa <= minS) {
+                countWarning++;
+                tbodyWarn.innerHTML += `<tr>
+                    <td><strong style="color:#7f1d1d;">${p.nama}</strong><br><small style="color:#991b1b;">${p.kemasan||'-'} | ${p.varian||'-'}</small></td>
+                    <td style="text-align:center; color:#dc2626; font-weight:900; font-size:1rem;">${sisa}</td>
+                    <td style="text-align:center; font-weight:700; color:#b91c1c;">${minS}</td>
+                </tr>`;
+            }
+        });
+        
+        // Tampilkan box jika ada barang menipis, sembunyikan jika aman
+        if(countWarning > 0) {
+            boxWarn.style.display = 'block';
+        } else {
+            boxWarn.style.display = 'none';
+        }
+    }
+
     function renderTabelOrderVendor() {
         const tbody = document.getElementById('tbodyOrderVendor');
         tbody.innerHTML = '';
@@ -971,8 +1047,8 @@
             tbody.appendChild(tr);
         });
         hitungTotalOrderVendor();
+        cekStokWarning(); // Cek peringatan stok setiap kali buka halaman
     }
-
     function hitungTotalOrderVendor() {
         let grandTotal = 0;
         masterVendor.forEach((p, idx) => {
@@ -1292,14 +1368,43 @@
     function hapusMutasiKas(docId) { if(db && confirm("Hapus kas ini?")) db.collection('logKas').doc(docId).delete(); }
 
     function resetFormMasterProduk() { 
-        document.getElementById('editIndexProduk').value="-1"; document.getElementById('inputNamaProduk').value=""; document.getElementById('inputKemasanProduk').value=""; document.getElementById('inputVarianProduk').value=""; document.getElementById('inputModalProduk').value=""; document.getElementById('inputJualProduk').value=""; document.getElementById('inputMarginProduk').value=""; document.getElementById('btnSimpanProduk').innerText="Simpan Produk"; 
+        document.getElementById('editIndexProduk').value="-1"; 
+        document.getElementById('inputNamaProduk').value=""; 
+        document.getElementById('inputKemasanProduk').value=""; 
+        document.getElementById('inputVarianProduk').value=""; 
+        document.getElementById('inputModalProduk').value=""; 
+        document.getElementById('inputJualProduk').value=""; 
+        document.getElementById('inputMarginProduk').value=""; 
+        document.getElementById('inputMinStokProduk').value="5"; // Default kembali ke 5
+        document.getElementById('btnSimpanProduk').innerText="Simpan Produk"; 
     }
     
-    function hitungMarginForm() { document.getElementById('inputMarginProduk').value=Math.max(0,(parseFloat(document.getElementById('inputJualProduk').value)||0)-(parseFloat(document.getElementById('inputModalProduk').value)||0)); }
+    function hitungMarginForm() { 
+        document.getElementById('inputMarginProduk').value=Math.max(0,(parseFloat(document.getElementById('inputJualProduk').value)||0)-(parseFloat(document.getElementById('inputModalProduk').value)||0)); 
+    }
     
     function simpanProdukBaru(e) { 
-        e.preventDefault(); const p = { nama: document.getElementById('inputNamaProduk').value.trim(), kemasan: document.getElementById('inputKemasanProduk').value.trim(), varian: document.getElementById('inputVarianProduk').value.trim(), modal: parseFloat(document.getElementById('inputModalProduk').value)||0, jual: parseFloat(document.getElementById('inputJualProduk').value)||0, margin: 0 }; p.margin = p.jual - p.modal; const idx = parseInt(document.getElementById('editIndexProduk').value); if(idx >= 0) masterProduk[idx] = p; else masterProduk.push(p); 
-        if(db) { db.collection('appData').doc('masterProduk').set({list:masterProduk}).then(() => { resetFormMasterProduk(); renderTabelMasterProduk(); showToast("✅ Produk Berhasil Disimpan!"); }); } else { resetFormMasterProduk(); renderTabelMasterProduk(); showToast("✅ Disimpan Lokal"); } 
+        e.preventDefault(); 
+        const p = { 
+            nama: document.getElementById('inputNamaProduk').value.trim(), 
+            kemasan: document.getElementById('inputKemasanProduk').value.trim(), 
+            varian: document.getElementById('inputVarianProduk').value.trim(), 
+            modal: parseFloat(document.getElementById('inputModalProduk').value)||0, 
+            jual: parseFloat(document.getElementById('inputJualProduk').value)||0, 
+            margin: 0,
+            minStok: parseFloat(document.getElementById('inputMinStokProduk').value)||0 // Ambil nilai min stok
+        }; 
+        p.margin = p.jual - p.modal; 
+        const idx = parseInt(document.getElementById('editIndexProduk').value); 
+        if(idx >= 0) masterProduk[idx] = p; else masterProduk.push(p); 
+        
+        if(db) { 
+            db.collection('appData').doc('masterProduk').set({list:masterProduk}).then(() => { 
+                resetFormMasterProduk(); renderTabelMasterProduk(); showToast("✅ Produk Berhasil Disimpan!"); 
+            }); 
+        } else { 
+            resetFormMasterProduk(); renderTabelMasterProduk(); showToast("✅ Disimpan Lokal"); 
+        } 
     }
     
     let sortKolomMaster = 'nama', sortAscMaster = true, searchMasterText = '';
@@ -1307,18 +1412,33 @@
     function sortMasterProduk(kolom) { if(sortKolomMaster === kolom) { sortAscMaster = !sortAscMaster; } else { sortKolomMaster = kolom; sortAscMaster = true; } renderTabelMasterProduk(); }
 
     function renderTabelMasterProduk() { 
-        const t = document.getElementById('tbodyMasterProduk'); let dataTampil = masterProduk.map((p, index) => ({ ...p, originalIndex: index }));
+        const t = document.getElementById('tbodyMasterProduk'); 
+        let dataTampil = masterProduk.map((p, index) => ({ ...p, originalIndex: index }));
         if (searchMasterText !== '') { dataTampil = dataTampil.filter(p => p.nama.toLowerCase().includes(searchMasterText) || (p.kemasan && p.kemasan.toLowerCase().includes(searchMasterText)) || (p.varian && p.varian.toLowerCase().includes(searchMasterText)) ); }
         dataTampil.sort((a, b) => { let valA = a[sortKolomMaster] || ''; let valB = b[sortKolomMaster] || ''; if (typeof valA === 'string') valA = valA.toLowerCase(); if (typeof valB === 'string') valB = valB.toLowerCase(); if (valA < valB) return sortAscMaster ? -1 : 1; if (valA > valB) return sortAscMaster ? 1 : -1; return 0; });
-        ['nama', 'kemasan', 'varian', 'modal', 'jual', 'margin'].forEach(h => { const el = document.getElementById(`sort_${h}`); if(el) { if(sortKolomMaster === h) el.innerText = sortAscMaster ? ' 🔼' : ' 🔽'; else el.innerText = ''; } });
+        ['nama', 'kemasan', 'varian', 'modal', 'jual', 'margin', 'minStok'].forEach(h => { const el = document.getElementById(`sort_${h}`); if(el) { if(sortKolomMaster === h) el.innerText = sortAscMaster ? ' 🔼' : ' 🔽'; else el.innerText = ''; } });
         let htmlRows = ''; 
         dataTampil.forEach((p, i) => { 
-            htmlRows += `<tr><td style="text-align:center;">${i+1}</td><td style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}</td><td style="color:#57534e; font-size:0.75rem;">${p.kemasan || '-'}</td><td style="color:#b45309; font-weight:bold; font-size:0.75rem;">${p.varian || '-'}</td><td>${formatRupiah(p.modal)}</td><td>${formatRupiah(p.jual)}</td><td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td><td style="display:flex; gap:6px; padding-top:10px;"><button onclick="editProdukMaster(${p.originalIndex})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button><button onclick="hapusProdukMaster(${p.originalIndex})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button></td></tr>`; 
+            let minS = p.minStok !== undefined ? p.minStok : 5; // Antisipasi produk lama yg belum punya data
+            htmlRows += `<tr><td style="text-align:center;">${i+1}</td><td style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}</td><td style="color:#57534e; font-size:0.75rem;">${p.kemasan || '-'}</td><td style="color:#b45309; font-weight:bold; font-size:0.75rem;">${p.varian || '-'}</td><td>${formatRupiah(p.modal)}</td><td>${formatRupiah(p.jual)}</td><td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td><td style="color:#b45309; font-weight:bold; text-align:center;">${minS}</td><td style="display:flex; gap:6px; padding-top:10px;"><button onclick="editProdukMaster(${p.originalIndex})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button><button onclick="hapusProdukMaster(${p.originalIndex})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button></td></tr>`; 
         }); 
         t.innerHTML = htmlRows; 
     }
     
-    function editProdukMaster(i) { const p = masterProduk[i]; document.getElementById('editIndexProduk').value = i; document.getElementById('inputNamaProduk').value = p.nama; document.getElementById('inputKemasanProduk').value = p.kemasan || ''; document.getElementById('inputVarianProduk').value = p.varian || ''; document.getElementById('inputModalProduk').value = p.modal; document.getElementById('inputJualProduk').value = p.jual; hitungMarginForm(); document.getElementById('btnSimpanProduk').innerText = "Update Produk"; window.scrollTo(0, 0); }
+    function editProdukMaster(i) { 
+        const p = masterProduk[i]; 
+        document.getElementById('editIndexProduk').value = i; 
+        document.getElementById('inputNamaProduk').value = p.nama; 
+        document.getElementById('inputKemasanProduk').value = p.kemasan || ''; 
+        document.getElementById('inputVarianProduk').value = p.varian || ''; 
+        document.getElementById('inputModalProduk').value = p.modal; 
+        document.getElementById('inputJualProduk').value = p.jual; 
+        document.getElementById('inputMinStokProduk').value = p.minStok !== undefined ? p.minStok : 5; 
+        hitungMarginForm(); 
+        document.getElementById('btnSimpanProduk').innerText = "Update Produk"; 
+        window.scrollTo(0, 0); 
+    }
+    
     function hapusProdukMaster(i) { if(confirm("Yakin ingin menghapus produk ini dari Master Data?")){ masterProduk.splice(i,1); if(db) db.collection('appData').doc('masterProduk').set({list:masterProduk}); renderTabelMasterProduk(); } }
     function hapusProduk(i) { if(isDataLocked(document.getElementById('tglOps').value)) return; if(confirm("Sembunyikan produk ini hari ini?")) { const tgl = document.getElementById('tglOps').value; dbStok[tgl].splice(i,1); if(db) db.collection('stokHarian').doc(tgl).set({items: dbStok[tgl]}); renderTabelMatriks(); updateKalkulasi(); } }
     
