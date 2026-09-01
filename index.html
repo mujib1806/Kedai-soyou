@@ -130,6 +130,12 @@
         .pdf-area-container table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
         .pdf-area-container th, .pdf-area-container td { border: 1px solid #d6d3d1; padding: 6px; text-align: left; }
         .pdf-area-container th { background: #f5f5f4; font-weight: bold; text-align: center; }
+        .dropdown-btn { width: 100%; text-align: left; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px 12px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; transition: 0.3s; }
+        .dropdown-container { display: none; background-color: rgba(0,0,0,0.25); border-radius: 8px; padding: 8px; margin-bottom: 8px; border-left: 1px solid rgba(255,255,255,0.05); }
+        .dropdown-container button { margin-bottom: 6px; border: none; border-left: 2px solid transparent; padding-left: 12px; font-weight: 600; color: #d6d3d1; background: transparent; }
+        .dropdown-container button:hover { color: white; border-left: 2px solid rgba(255,255,255,0.5); }
+        .dropdown-btn.active { background: rgba(255,255,255,0.1); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .dropdown-btn.active + .dropdown-container { display: block; border-top-left-radius: 0; border-top-right-radius: 0; }
     </style>
 </head>
 <body>
@@ -178,17 +184,55 @@
             <div id="namaUserAktif" style="font-size: 1rem; font-weight: 800; color: #fafaf9;">-</div>
             <div id="roleUserAktif" style="font-size: 0.65rem; font-weight: 700; color: #fde047; text-transform: uppercase; background: rgba(253, 224, 71, 0.1); display: inline-block; padding: 2px 6px; border-radius: 4px; margin-top: 4px;">-</div>
         </div>
-        <ul class="sidebar-menu" style="margin-top: 12px;">
-            <li><button onclick="pilihMenuNav('harian')">📋 Rekap Stok Harian</button></li>
+       <ul class="sidebar-menu" style="margin-top: 12px;">
+            <!-- 1. DASHBOARD UTAMA -->
+            <li id="menuDashboard">
+                <button onclick="pilihMenuNav('dashboard')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; font-size: 0.95rem; padding: 12px; font-weight: 800; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                    📈 DASHBOARD UTAMA
+                </button>
+            </li>
             
-            <li id="menuOrderVendor"><button onclick="pilihMenuNav('orderVendor')" style="border-left: 4px solid #3b82f6;">📦 Form Order Vendor</button></li>
-            <li id="menuTransfer"><button onclick="pilihMenuNav('rekapTransfer')">🏦 Rekap Transfer Dompet</button></li>
-            <li id="menuMutasi"><button onclick="pilihMenuNav('mutasiKas')" style="border-left: 4px solid #10b981;">💰 Ringkasan & Mutasi Kas</button></li>
-            <li id="menuDashboard"><button onclick="pilihMenuNav('dashboard')" style="border-left: 4px solid #f59e0b;">📈 Dashboard Grafik</button></li>
-            <li id="menuProduk" style="margin-top: 20px;"><button onclick="pilihMenuNav('masterProduk')" style="border-left: 4px solid #6b7280;">⚙️ Kelola Master Produk</button></li>  <li id="menuKelolaAkun"><button onclick="bukaModalKelolaAkun()" style="border-left: 4px solid #ef4444; color: #fca5a5;">👥 Kelola Akun Kasir</button></li>
-            <li id="menuCetak1"><button onclick="bukaModalCetakPeriode('mingguan')">📊 Cetak Rekap Mingguan</button></li>
-            <li id="menuCetak2"><button onclick="bukaModalCetakPeriode('bulanan')">📈 Cetak Rekap Bulanan</button></li>
-            <li style="margin-top: 25px;"><button onclick="prosesLogout()" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); text-align: center;">🚪 Keluar (Logout)</button></li>
+            <hr style="border: 0; border-top: 1px dashed rgba(255,255,255,0.2); margin: 15px 0;">
+
+            <!-- 2. OPERASIONAL (ORANYE) -->
+            <li class="nav-group">
+                <button class="dropdown-btn" onclick="toggleDropdown(this)" style="border-left: 4px solid #f97316; color: #ffedd5;">
+                    📦 Operasional <span style="font-size: 0.7rem;">▼</span>
+                </button>
+                <div class="dropdown-container">
+                    <button onclick="pilihMenuNav('harian')">📋 Rekap Stok Harian</button>
+                    <button id="menuProduk" onclick="pilihMenuNav('masterProduk')">⚙️ Kelola Master Produk</button>
+                    <button id="menuOrderVendor" onclick="pilihMenuNav('orderVendor')">📦 Form Order Vendor</button>
+                </div>
+            </li>
+
+            <!-- 3. DOMPET (BIRU LANGIT) -->
+            <li class="nav-group" id="grupDompet">
+                <button class="dropdown-btn" onclick="toggleDropdown(this)" style="border-left: 4px solid #38bdf8; color: #e0f2fe;">
+                    💰 Dompet & Kas <span style="font-size: 0.7rem;">▼</span>
+                </button>
+                <div class="dropdown-container">
+                    <button id="menuTransfer" onclick="pilihMenuNav('rekapTransfer')">🏦 Rekap Transfer Dompet</button>
+                    <button id="menuMutasi" onclick="pilihMenuNav('mutasiKas')">💸 Ringkasan Mutasi Kas</button>
+                </div>
+            </li>
+
+            <!-- 4. LAPORAN & PENGATURAN (HIJAU) -->
+            <li class="nav-group" id="grupLaporan">
+                <button class="dropdown-btn" onclick="toggleDropdown(this)" style="border-left: 4px solid #4ade80; color: #dcfce7;">
+                    📊 Laporan & Seting <span style="font-size: 0.7rem;">▼</span>
+                </button>
+                <div class="dropdown-container">
+                    <button id="menuLaporanBaru" onclick="pilihMenuNav('laporan')">📑 Lihat & Cetak Laporan</button>
+                    <button id="menuKelolaAkun" onclick="bukaModalKelolaAkun()">👥 Kelola Akun Kasir</button>
+                </div>
+            </li>
+
+            <li style="margin-top: 30px;">
+                <button onclick="prosesLogout()" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); text-align: center;">
+                    🚪 Keluar (Logout)
+                </button>
+            </li>
         </ul>
     </div>
 
@@ -679,7 +723,14 @@
         try { inisiatisasiRealtimeListener(); } catch(e) { loadDataTanggalLocal(); } 
     }
     
-    function prosesLogout() { if(confirm("Keluar dari aplikasi?")) { localStorage.removeItem('baksoUser'); currentUser = null; window.location.reload(); } }
+ function prosesLogout() { if(confirm("Keluar dari aplikasi?")) { localStorage.removeItem('baksoUser'); currentUser = null; window.location.reload(); } }
+
+    function toggleDropdown(btn) {
+        btn.classList.toggle("active");
+        let icon = btn.querySelector("span");
+        if (btn.classList.contains("active")) { icon.innerText = "▲"; } 
+        else { icon.innerText = "▼"; }
+    }
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
    function pilihMenuNav(jenis) { 
