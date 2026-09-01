@@ -223,25 +223,28 @@
                 
                 <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--border-color);">
                 
-                <div class="table-wrapper" style="max-height: none;"> <table class="table-freeze">
-                       <thead>
+                <div style="margin-bottom: 12px;">
+                    <input type="text" id="searchMaster" placeholder="🔍 Cari Nama Produk atau Varian di sini..." style="width: 100%; padding: 10px 15px; border-radius: 8px; border: 2px solid #d6d3d1; font-size: 0.85rem;" oninput="filterMasterProduk(this.value)">
+                </div>
+                
+                <div class="table-wrapper" style="max-height: none;">
+                    <table class="table-freeze">
+                        <thead>
                             <tr>
                                 <th style="width:40px;">No</th>
-                                <th style="text-align:left;">Nama Produk</th>
-                                <th style="text-align:left;">Kemasan</th>
-                                <th style="text-align:left;">Varian</th>
-                                <th>Modal</th>
-                                <th>Jual</th>
-                                <th>Margin</th>
+                                <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('nama')">Nama Produk <span id="sort_nama">🔼</span></th>
+                                <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('kemasan')">Kemasan <span id="sort_kemasan"></span></th>
+                                <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('varian')">Varian <span id="sort_varian"></span></th>
+                                <th style="cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('modal')">Modal <span id="sort_modal"></span></th>
+                                <th style="cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('jual')">Jual <span id="sort_jual"></span></th>
+                                <th style="cursor:pointer; color:#1d4ed8;" onclick="sortMasterProduk('margin')">Margin <span id="sort_margin"></span></th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyMasterProduk"></tbody>
                     </table>
                 </div>
-            </div>
-        </div>
-        
+                
         <div id="viewDashboard" style="display:none; margin-bottom: 40px;">
             <div class="card" style="border-top: 4px solid #f59e0b;">
                 <h2 style="color: #b45309; margin-bottom: 12px;">📈 Dashboard Analisa (7 Hari)</h2>
@@ -1206,11 +1209,73 @@
         } 
     }
     
-   function renderTabelMasterProduk() { 
+   // ================= FUNGSI SORTING & FILTER MASTER PRODUK =================
+    let sortKolomMaster = 'nama'; // Default urut berdasarkan Abjad (Nama)
+    let sortAscMaster = true;
+    let searchMasterText = '';
+
+    function filterMasterProduk(val) {
+        searchMasterText = val.toLowerCase();
+        renderTabelMasterProduk();
+    }
+
+    function sortMasterProduk(kolom) {
+        // Jika kolom yang diklik sama, ubah arah panahnya (A-Z jadi Z-A)
+        if(sortKolomMaster === kolom) {
+            sortAscMaster = !sortAscMaster;
+        } else {
+            sortKolomMaster = kolom;
+            sortAscMaster = true;
+        }
+        renderTabelMasterProduk();
+    }
+
+    function renderTabelMasterProduk() { 
         const t = document.getElementById('tbodyMasterProduk'); 
         t.innerHTML = ''; 
-        masterProduk.forEach((p,i) => { 
-            // Jika kosong, tampilkan tanda strip (-)
+        
+        // 1. Tandai Index Asli (Sangat krusial agar Edit & Hapus tidak meleset saat data difilter!)
+        let dataTampil = masterProduk.map((p, index) => ({ ...p, originalIndex: index }));
+
+        // 2. Jalankan Filter Pencarian (Jika ada teks yang diketik)
+        if (searchMasterText !== '') {
+            dataTampil = dataTampil.filter(p => 
+                p.nama.toLowerCase().includes(searchMasterText) || 
+                (p.kemasan && p.kemasan.toLowerCase().includes(searchMasterText)) || 
+                (p.varian && p.varian.toLowerCase().includes(searchMasterText))
+            );
+        }
+
+        // 3. Jalankan Pengurutan (Sorting Abjad/Angka)
+        dataTampil.sort((a, b) => {
+            let valA = a[sortKolomMaster];
+            let valB = b[sortKolomMaster];
+            
+            // Tangani data kosong
+            if(valA === undefined || valA === null) valA = '';
+            if(valB === undefined || valB === null) valB = '';
+
+            // Jika teks, ubah ke huruf kecil agar pengurutan akurat
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+
+            if (valA < valB) return sortAscMaster ? -1 : 1;
+            if (valA > valB) return sortAscMaster ? 1 : -1;
+            return 0;
+        });
+
+        // 4. Update Tampilan Ikon Panah 🔼/🔽 di Header Tabel
+        const headers = ['nama', 'kemasan', 'varian', 'modal', 'jual', 'margin'];
+        headers.forEach(h => {
+            const el = document.getElementById(`sort_${h}`);
+            if(el) {
+                if(sortKolomMaster === h) el.innerText = sortAscMaster ? ' 🔼' : ' 🔽';
+                else el.innerText = '';
+            }
+        });
+
+        // 5. Cetak Data ke Tabel
+        dataTampil.forEach((p, i) => { 
             const txtKemasan = p.kemasan ? p.kemasan : '-'; 
             const txtVarian = p.varian ? p.varian : '-'; 
             
@@ -1223,13 +1288,12 @@
                 <td>${formatRupiah(p.jual)}</td>
                 <td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td>
                 <td style="display:flex; gap:6px; padding-top:10px;">
-                    <button onclick="editProdukMaster(${i})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button>
-                    <button onclick="hapusProdukMaster(${i})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button>
+                    <button onclick="editProdukMaster(${p.originalIndex})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button>
+                    <button onclick="hapusProdukMaster(${p.originalIndex})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button>
                 </td>
             </tr>`; 
         }); 
     }
-    
     function editProdukMaster(i) { 
         const p = masterProduk[i]; 
         document.getElementById('editIndexProduk').value = i; 
