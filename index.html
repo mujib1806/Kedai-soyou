@@ -327,6 +327,39 @@
         </div>
 
         <div id="viewHarian" style="display:none;">
+            <style>
+                /* 1. Kolom Nama Produk (Lebar 85px) */
+                #viewHarian .table-freeze th:nth-child(1), 
+                #viewHarian .table-freeze td:nth-child(1) { 
+                    position: sticky !important; left: 0 !important; z-index: 5; 
+                    width: 85px !important; min-width: 85px !important; max-width: 85px !important; 
+                }
+                
+                /* 2. Kolom Kemasan (Lebar 60px) */
+                #viewHarian .table-freeze th:nth-child(2), 
+                #viewHarian .table-freeze td:nth-child(2) { 
+                    position: sticky !important; left: 85px !important; z-index: 5; 
+                    width: 60px !important; min-width: 60px !important; max-width: 60px !important; 
+                    box-shadow: none !important; border-right: none !important; 
+                }
+                
+                /* 3. Kolom Varian (Lebar 60px) - Garis batas dan bayangan dipindah ke sini */
+                #viewHarian .table-freeze th:nth-child(3), 
+                #viewHarian .table-freeze td:nth-child(3) { 
+                    position: sticky !important; left: 145px !important; z-index: 5; 
+                    width: 60px !important; min-width: 60px !important; max-width: 60px !important; 
+                    box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1) !important; 
+                    border-right: 1px solid var(--border-color) !important; 
+                    background: #fff; white-space: normal; vertical-align: top;
+                }
+                
+                /* Mengunci Header agar tidak tertimpa saat scroll ke bawah */
+                #viewHarian .table-freeze th:nth-child(1), 
+                #viewHarian .table-freeze th:nth-child(2), 
+                #viewHarian .table-freeze th:nth-child(3) { 
+                    z-index: 20 !important; background-color: #fafaf9 !important; top: 0 !important; 
+                }
+            </style>
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <h2 style="margin:0; font-size: 1.1rem; color:#4c2c16;">📋 Entry Stok Harian</h2>
