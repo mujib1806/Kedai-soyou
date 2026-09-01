@@ -944,8 +944,8 @@
         if (document.activeElement && document.activeElement.tagName !== 'INPUT') { renderTabelMatriks(); } 
     }
 
-   // ================= VARIABEL FILTER & SORTING HARIAN =================
-    let sortKolomHarian = ''; // Kosong agar saat pertama kali buka urut sesuai Master
+  // ================= VARIABEL FILTER & SORTING HARIAN =================
+    let sortKolomHarian = 'nama'; // Kita set default urut abjad nama agar rapi
     let sortAscHarian = true;
     let searchHarianText = '';
 
@@ -970,9 +970,10 @@
         const locked = isDataLocked(tgl);
         const thead = document.getElementById('theadMatriks');
         
-        // 1. Ubah Header: Nama & Kemasan serta Varian bisa diklik!
+        // 1. Ubah Header: Nama, Kemasan, dan Varian dipisah murni
         thead.innerHTML = `<tr>
-            <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortStokHarian('kemasan')">Nama & Kemasan <span id="sort_hr_kemasan"></span></th>
+            <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortStokHarian('nama')">Nama Produk <span id="sort_hr_nama">🔼</span></th>
+            <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortStokHarian('kemasan')">Kemasan <span id="sort_hr_kemasan"></span></th>
             <th style="text-align:left; cursor:pointer; color:#1d4ed8;" onclick="sortStokHarian('varian')">Varian <span id="sort_hr_varian"></span></th>
             <th style="background:#fef9c3; color:#854d0e;">Awal</th>
             <th style="background:#dcfce7; color:#166534; font-size: 0.9rem;">+</th>
@@ -986,7 +987,7 @@
         
         const tbody = document.getElementById('tbodyMatriks'); 
         
-        // 2. Siapkan Data & Amankan Index Asli (Penting agar tidak salah simpan!)
+        // 2. Siapkan Data & Amankan Index Asli
         let dataTampil = (dbStok[tgl] || []).map((p, index) => ({ ...p, originalIndex: index }));
 
         // 3. Proses Filter Pencarian
@@ -998,18 +999,12 @@
             );
         }
 
-        // 4. Proses Pengurutan
+        // 4. Proses Pengurutan (Sekarang mengurutkan murni per-kolom tanpa dicampur)
         if (sortKolomHarian !== '') {
             dataTampil.sort((a, b) => {
                 let valA = a[sortKolomHarian] || '';
                 let valB = b[sortKolomHarian] || '';
                 
-                // Khusus jika diurutkan berdasarkan Kemasan, kita gabung dengan Nama agar rapi
-                if (sortKolomHarian === 'kemasan') {
-                    valA = (a.kemasan || '') + ' ' + (a.nama || '');
-                    valB = (b.kemasan || '') + ' ' + (b.nama || '');
-                }
-
                 if (typeof valA === 'string') valA = valA.toLowerCase();
                 if (typeof valB === 'string') valB = valB.toLowerCase();
 
@@ -1020,7 +1015,7 @@
         }
 
         // 5. Update Ikon Panah di Header
-        ['kemasan', 'varian'].forEach(h => {
+        ['nama', 'kemasan', 'varian'].forEach(h => {
             const el = document.getElementById(`sort_hr_${h}`);
             if (el) {
                 if (sortKolomHarian === h) el.innerText = sortAscHarian ? ' 🔼' : ' 🔽';
@@ -1028,7 +1023,7 @@
             }
         });
 
-        // 6. Cetak ke Layar secara Batching (Teknik Anti-Lag)
+        // 6. Cetak ke Layar secara Batching
         let htmlRows = '';
         
         dataTampil.forEach((p) => {
@@ -1045,11 +1040,13 @@
             
             const actionHTML = locked ? '<span style="font-size:0.8rem;color:#a8a29e;">🔒</span>' : `<button onclick="hapusProduk(${idx})" class="btn btn-danger" style="padding:4px 6px; font-size:0.6rem; margin:0; border-radius:4px;">🗑️</button>`;
             
-            const txtKemasan = p.kemasan ? `<br><small style="color:#78716c; font-weight:normal;">${p.kemasan}</small>` : '';
+            const txtKemasan = p.kemasan ? p.kemasan : '-';
             const txtVarian = p.varian || '-';
 
+            // HTML tabel dipecah menjadi kolom-kolom mandiri
             htmlRows += `<tr>
-                <td><div style="font-weight:700; color:var(--text-main); font-size:0.75rem;">${p.nama}</div>${txtKemasan}</td>
+                <td><div style="font-weight:700; color:var(--text-main); font-size:0.75rem;">${p.nama}</div></td>
+                <td><div style="color:#57534e; font-size:0.7rem;">${txtKemasan}</div></td>
                 <td><div style="font-weight:600; color:#44403c; font-size:0.7rem;">${txtVarian}</div></td>
                 <td style="text-align:center;"><input type="number" class="input-stok input-pagi" id="pagi_${idx}" value="${p.awal}" min="0" oninput="updateNilaiStokLokal(${idx}, 'awal', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
                 <td style="text-align:center;"><input type="number" class="input-stok input-tambah" id="tambah_${idx}" value="${p.tambah || ''}" min="0" oninput="updateNilaiStokLokal(${idx}, 'tambah', this.value)" onchange="simpanStokOtomatis()" ${locked ? 'disabled' : ''}></td>
@@ -1064,6 +1061,7 @@
         
         tbody.innerHTML = htmlRows;
     }
+    
     function simpanStokOtomatis() { 
         const tgl = document.getElementById('tglOps').value; 
         if(isDataLocked(tgl)) return; 
