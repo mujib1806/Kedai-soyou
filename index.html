@@ -887,12 +887,18 @@
         db.collection('logKas').onSnapshot(snapshot => { dbLogKas = []; snapshot.forEach(doc => { dbLogKas.push({ id: doc.id, ...doc.data() }); }); hitungAkumulasiKasTotal(); });
     }
 
-    // --- PERBAIKAN BUG TARIK DATA SISA KEMARIN ---
+        // --- PERBAIKAN BUG TARIK DATA SISA KEMARIN ---
     function cekDanTarikDataKemarin(tgl) {
         if (isDataLocked(tgl)) return;
-        let [y, m, d] = tgl.split('-'); let dateObj = new Date(y, m - 1, d); dateObj.setDate(dateObj.getDate() - 1); 
+        
+        // Memecah tanggal manual agar kebal dari BUG Timezone Javascript
+        let [y, m, d] = tgl.split('-'); 
+        let dateObj = new Date(y, m - 1, d); 
+        dateObj.setDate(dateObj.getDate() - 1); // Mundur 1 hari
         let tglKemarin = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-        let isKemarinLocked = dbStatusKunci[tglKemarin] === true; let needsUpdateUI = false;
+        
+        let isKemarinLocked = dbStatusKunci[tglKemarin] === true; 
+        let needsUpdateUI = false;
 
         if (dbStok[tgl]) {
             let isNeedsPullStok = dbStok[tgl].some(p => p.awal === "" || p.awal === null || p.awal === undefined);
@@ -900,22 +906,43 @@
                 if (isKemarinLocked) {
                     dbStok[tgl].forEach((p, idx) => {
                         if (p.awal === "" || p.awal === null || p.awal === undefined) {
+                            // Cari produk yang sama di tanggal kemarin
                             let pKemarin = dbStok[tglKemarin].find(x => x.nama === p.nama && x.kemasan === p.kemasan && x.varian === p.varian);
                             if(!pKemarin) pKemarin = dbStok[tglKemarin].find(x => x.nama === p.nama); 
+                            
                             if (pKemarin) {
-                                const aw = parseFloat(pKemarin.awal) || 0; const tb = parseFloat(pKemarin.tambah) || 0; const kr = parseFloat(pKemarin.kurang) || 0;
-                                const tj = (pKemarin.terjual !== "" && pKemarin.terjual !== null) ? parseFloat(pKemarin.terjual) : 0;
-                                dbStok[tgl][idx].awal = (aw + tb - kr) - tj; needsUpdateUI = true;
+                                // AMBIL LANGSUNG NILAI 'SISA' DARI KEMARIN (Tanpa dihitung ulang)
+                                let sisaKemarin = pKemarin.sisa;
+                                
+                                // Pastikan nilainya berupa angka, jika kosong jadikan 0
+                                sisaKemarin = (sisaKemarin !== "" && sisaKemarin !== null && sisaKemarin !== undefined) ? parseFloat(sisaKemarin) : 0;
+                                
+                                // Cegah nilai minus (kalau kemarin ada salah ketik)
+                                if(sisaKemarin < 0) sisaKemarin = 0;
+                                
+                                // Masukkan ke Stok Awal hari ini
+                                dbStok[tgl][idx].awal = sisaKemarin; 
+                                needsUpdateUI = true;
                             }
                         }
                     });
-                    if (needsUpdateUI && db) { db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }); }
+                    
+                    // Simpan ke database
+                    if (needsUpdateUI && db) { 
+                        db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }); 
+                    }
                 } else {
-                    if (hasAlertedTgl !== tgl) { alert(`⚠️ Data tanggal ${tglKemarin} BELUM DIGEMBOK!\nBuka tanggal ${tglKemarin} lalu klik '🔓 BUKA' menjadi '🔒 TERKUNCI' agar stok sisa tertarik otomatis.`); hasAlertedTgl = tgl; }
+                    if (hasAlertedTgl !== tgl) { 
+                        alert(`⚠️ Data tanggal ${tglKemarin} BELUM DIGEMBOK!\nBuka tanggal ${tglKemarin} lalu klik '🔓 BUKA' menjadi '🔒 TERKUNCI' agar stok sisa otomatis masuk ke stok awal hari ini.`); 
+                        hasAlertedTgl = tgl; 
+                    }
                 }
             }
         }
-        if (needsUpdateUI && document.activeElement && document.activeElement.tagName !== 'INPUT') { renderTabelMatriks(); updateKalkulasi(); }
+        if (needsUpdateUI && document.activeElement && document.activeElement.tagName !== 'INPUT') { 
+            renderTabelMatriks(); 
+            updateKalkulasi(); 
+        }
     }
 
     function syncStokDenganMaster(tgl) { 
