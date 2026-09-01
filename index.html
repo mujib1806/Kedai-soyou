@@ -195,7 +195,14 @@
     <div class="container">
         <div id="viewMasterProduk" style="display:none; margin-bottom: 40px;">
             <div class="card" style="border-top: 4px solid #6b7280;">
-                <h2 style="color: #374151; margin-bottom: 12px;">⚙️ Kelola Master Produk</h2>
+               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <h2 style="color: #374151; margin:0;">⚙️ Kelola Master Produk</h2>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" onclick="document.getElementById('fileImportMaster').click()" class="btn btn-warning" style="width:auto; padding:6px 8px; font-size:0.7rem; margin:0; border-radius:8px; background: #fbbf24; color:#78350f;">📥 Import CSV</button>
+                        <button type="button" onclick="downloadTemplateMaster()" class="btn btn-outline" style="width:auto; padding:6px 8px; font-size:0.7rem; margin:0; border-radius:8px; border-color:#d6d3d1; color:#57534e;">📤 Export CSV</button>
+                        <input type="file" id="fileImportMaster" accept=".csv" style="display:none;" onchange="importMasterProduk(event)">
+                    </div>
+                </div>
                 <form onsubmit="simpanProdukBaru(event)">
                     <input type="hidden" id="editIndexProduk" value="-1">
                     <div class="form-group"><label>Nama Dasar Produk (Cth: Teh Sosro):</label><input type="text" id="inputNamaProduk" required></div>
@@ -1356,6 +1363,81 @@
     function downloadTemplatePagi() { const tgl = document.getElementById('tglOps').value; let csv = 'Nama Dasar;Kemasan;Varian;Stok Awal;Tambah;Kurang;Stok Sisa\n'; (dbStok[tgl] || masterProduk).forEach(p => { csv += `${p.nama};${p.kemasan||''};${p.varian||''};${p.awal || 0};${p.tambah || 0};${p.kurang || 0};${p.sisa || ""}\n`; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Stok_Harian_${tgl}.csv`; link.click(); }
     
     function importStokPagi(event) { if(isDataLocked(document.getElementById('tglOps').value)) { alert("Data terkunci!"); return; } const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const tgl = document.getElementById('tglOps').value; if (!dbStok[tgl]) syncStokDenganMaster(tgl); e.target.result.split('\n').forEach((line, index) => { if (index === 0 || !line.trim()) return; const cols = line.split(';'); if (cols.length >= 4) { const idx = dbStok[tgl].findIndex(p => p.nama.toLowerCase() === cols[0].trim().toLowerCase() && (p.kemasan||'').toLowerCase() === cols[1].trim().toLowerCase() && (p.varian||'').toLowerCase() === cols[2].trim().toLowerCase()); if (idx !== -1) { dbStok[tgl][idx].awal = cols[3].trim(); if (cols[4]) dbStok[tgl][idx].tambah = cols[4].trim(); if (cols[5]) dbStok[tgl][idx].kurang = cols[5].trim(); if (cols[6]) dbStok[tgl][idx].sisa = cols[6].trim(); } } }); if(db) db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }).then(() => { renderTabelMatriks(); updateKalkulasi(); alert('✅ Import OK'); }); else { renderTabelMatriks(); updateKalkulasi(); alert('✅ Import Lokal OK'); } }; reader.readAsText(file); }
+// ================= FUNGSI EXPORT/IMPORT MASTER PRODUK =================
+    
+    function downloadTemplateMaster() { 
+        let csv = 'Nama Dasar;Kemasan;Varian;Modal;Jual\n'; 
+        masterProduk.forEach(p => { 
+            csv += `${p.nama};${p.kemasan||''};${p.varian||''};${p.modal};${p.jual}\n`; 
+        }); 
+        const link = document.createElement("a"); 
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); 
+        link.download = `Master_Produk_SoYou.csv`; 
+        link.click(); 
+    }
+    
+    function importMasterProduk(event) { 
+        const file = event.target.files[0]; 
+        if (!file) return; 
+        
+        const reader = new FileReader(); 
+        reader.onload = function(e) { 
+            const lines = e.target.result.split('\n');
+            let itemDiperbarui = 0;
+            let itemBaru = 0;
+            
+            lines.forEach((line, index) => { 
+                if (index === 0 || !line.trim()) return; // Abaikan baris pertama (header) atau baris kosong
+                const cols = line.split(';'); 
+                
+                if (cols.length >= 5) { 
+                    const nama = cols[0].trim();
+                    const kemasan = cols[1].trim();
+                    const varian = cols[2].trim();
+                    const modal = parseFloat(cols[3].trim()) || 0;
+                    const jual = parseFloat(cols[4].trim()) || 0;
+                    const margin = jual - modal;
+                    
+                    if(nama) {
+                        // Cari apakah produk sudah ada di master
+                        const idx = masterProduk.findIndex(p => 
+                            p.nama.toLowerCase() === nama.toLowerCase() && 
+                            (p.kemasan||'').toLowerCase() === kemasan.toLowerCase() && 
+                            (p.varian||'').toLowerCase() === varian.toLowerCase()
+                        );
+                        
+                        if(idx !== -1) {
+                            // Jika ada, cukup update harga modal dan jualnya
+                            masterProduk[idx].modal = modal;
+                            masterProduk[idx].jual = jual;
+                            masterProduk[idx].margin = margin;
+                            itemDiperbarui++;
+                        } else {
+                            // Jika belum ada, masukkan sebagai produk baru
+                            masterProduk.push({ nama, kemasan, varian, modal, jual, margin });
+                            itemBaru++;
+                        }
+                    }
+                } 
+            }); 
+            
+            if(itemDiperbarui > 0 || itemBaru > 0) {
+                if(db) {
+                    db.collection('appData').doc('masterProduk').set({ list: masterProduk }).then(() => { 
+                        renderTabelMasterProduk(); 
+                        alert(`✅ Import Berhasil!\n\n${itemDiperbarui} Produk Diperbarui harganya\n${itemBaru} Produk Baru ditambahkan.`); 
+                    });
+                } else {
+                    renderTabelMasterProduk(); 
+                    alert(`✅ Import Lokal Berhasil!\n\n${itemDiperbarui} Produk Diperbarui\n${itemBaru} Produk Baru.`);
+                }
+            } else {
+                alert("⚠️ Format CSV kosong atau tidak terbaca.");
+            }
+            event.target.value = ''; // Reset input agar bisa import file yang sama lagi jika perlu
+        }; 
+        reader.readAsText(file); 
+    }
 </script>
 </body>
 </html>
