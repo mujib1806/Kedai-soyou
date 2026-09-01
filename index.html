@@ -194,6 +194,25 @@
 
     <div class="container">
         <div id="viewMasterProduk" style="display:none; margin-bottom: 40px;">
+            <style>
+            /* Mengecilkan kolom No menjadi 35px */
+            #viewMasterProduk .table-freeze th:nth-child(1), 
+            #viewMasterProduk .table-freeze td:nth-child(1) { 
+                width: 35px !important; 
+                min-width: 35px !important; 
+                max-width: 35px !important; 
+                text-align: center;
+            }
+            /* Menyesuaikan posisi kolom Nama Produk agar menempel pada kolom No, 
+               dan memperlebar ruangnya agar teks nama tidak terjepit */
+            #viewMasterProduk .table-freeze th:nth-child(2), 
+            #viewMasterProduk .table-freeze td:nth-child(2) { 
+                left: 35px !important; 
+                width: 150px !important; 
+                min-width: 150px !important; 
+                max-width: 150px !important; 
+            }
+        </style>
             <div class="card" style="border-top: 4px solid #6b7280;">
                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <h2 style="color: #374151; margin:0;">⚙️ Kelola Master Produk</h2>
