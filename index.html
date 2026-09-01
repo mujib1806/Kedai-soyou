@@ -185,8 +185,7 @@
             <li id="menuTransfer"><button onclick="pilihMenuNav('rekapTransfer')">🏦 Rekap Transfer Dompet</button></li>
             <li id="menuMutasi"><button onclick="pilihMenuNav('mutasiKas')" style="border-left: 4px solid #10b981;">💰 Ringkasan & Mutasi Kas</button></li>
             <li id="menuDashboard"><button onclick="pilihMenuNav('dashboard')" style="border-left: 4px solid #f59e0b;">📈 Dashboard Grafik</button></li>
-            <li id="menuProduk" style="margin-top: 20px;"><button onclick="bukaModalKelolaProduk()">⚙️ Kelola Master Produk</button></li>
-            <li id="menuKelolaAkun"><button onclick="bukaModalKelolaAkun()" style="border-left: 4px solid #ef4444; color: #fca5a5;">👥 Kelola Akun Kasir</button></li>
+            <li id="menuProduk" style="margin-top: 20px;"><button onclick="pilihMenuNav('masterProduk')" style="border-left: 4px solid #6b7280;">⚙️ Kelola Master Produk</button></li>  <li id="menuKelolaAkun"><button onclick="bukaModalKelolaAkun()" style="border-left: 4px solid #ef4444; color: #fca5a5;">👥 Kelola Akun Kasir</button></li>
             <li id="menuCetak1"><button onclick="bukaModalCetakPeriode('mingguan')">📊 Cetak Rekap Mingguan</button></li>
             <li id="menuCetak2"><button onclick="bukaModalCetakPeriode('bulanan')">📈 Cetak Rekap Bulanan</button></li>
             <li style="margin-top: 25px;"><button onclick="prosesLogout()" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.2); text-align: center;">🚪 Keluar (Logout)</button></li>
@@ -194,6 +193,45 @@
     </div>
 
     <div class="container">
+        <div id="viewMasterProduk" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #6b7280;">
+                <h2 style="color: #374151; margin-bottom: 12px;">⚙️ Kelola Master Produk</h2>
+                <form onsubmit="simpanProdukBaru(event)">
+                    <input type="hidden" id="editIndexProduk" value="-1">
+                    <div class="form-group"><label>Nama Dasar Produk (Cth: Teh Sosro):</label><input type="text" id="inputNamaProduk" required></div>
+                    <div class="grid-mobile">
+                        <div class="form-group"><label>Kemasan (Cth: Botol Beling):</label><input type="text" id="inputKemasanProduk"></div>
+                        <div class="form-group"><label>Varian (Cth: Original):</label><input type="text" id="inputVarianProduk"></div>
+                    </div>
+                    <div class="grid-mobile" style="margin-top:8px;">
+                        <div class="form-group"><label>Modal (Rp):</label><input type="number" id="inputModalProduk" min="0" required oninput="hitungMarginForm()"></div>
+                        <div class="form-group"><label>Jual (Rp):</label><input type="number" id="inputJualProduk" min="0" required oninput="hitungMarginForm()"></div>
+                    </div>
+                    <div class="form-group"><label>Margin / Profit Bersih:</label><input type="number" id="inputMarginProduk" readonly style="color:#16a34a; font-weight:bold; background:#f0fdf4;"></div>
+                    <div style="display:flex; gap:8px; margin-top:12px;">
+                        <button type="button" class="btn btn-danger" onclick="resetFormMasterProduk()">Batal / Reset</button>
+                        <button type="submit" class="btn btn-success" id="btnSimpanProduk">Simpan Produk</button>
+                    </div>
+                </form>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--border-color);">
+                
+                <div class="table-wrapper" style="max-height: none;"> <table class="table-freeze">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">No</th>
+                                <th style="text-align:left;">Info Produk</th>
+                                <th>Modal</th>
+                                <th>Jual</th>
+                                <th>Margin</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyMasterProduk"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
         
         <div id="viewDashboard" style="display:none; margin-bottom: 40px;">
             <div class="card" style="border-top: 4px solid #f59e0b;">
@@ -391,7 +429,6 @@
 
 <div class="modal" id="modalKelolaAkun"><div class="modal-content"><h3 style="font-size:1.1rem; font-weight:800; color:#d97706;">👥 Manajemen Akun Karyawan</h3><form onsubmit="simpanAkunBaru(event)" style="background:#fef3c7; padding:12px; border-radius:8px; border:1px solid #fde68a; margin-bottom:15px;"><div class="form-group"><label>Nama Kasir/Karyawan:</label><input type="text" id="inAkunNama" required></div><div class="form-group"><label>No. HP:</label><input type="tel" id="inAkunHp" required></div><div class="grid-mobile"><div class="form-group"><label>Password:</label><input type="text" id="inAkunPass" required></div><div class="form-group"><label>Jabatan (Role):</label><select id="inAkunRole"><option value="kasir">🧑‍🍳 Kasir</option><option value="owner">👑 Owner</option></select></div></div><button type="submit" class="btn btn-warning" style="margin-top:8px;">+ Tambahkan Akun</button></form><div class="table-wrapper" style="max-height:200px; overflow-y:auto;"><table><thead><tr><th>Nama</th><th>No. HP</th><th>Role</th><th>Aksi</th></tr></thead><tbody id="tbodyDaftarAkun"></tbody></table></div><button type="button" class="btn btn-outline" onclick="tutupModalKelolaAkun()">Tutup</button></div></div>
 <div class="modal" id="modalCetakPeriode"><div class="modal-content"><h3 id="modalCetakJudul" style="font-size:1.1rem; font-weight:800;">Cetak Laporan</h3><input type="hidden" id="jenisCetakPeriode"><div id="formCetakMingguan" style="display:none;"><div class="form-group"><label>Dari Tanggal:</label><input type="date" id="cetakTglAwal"></div><div class="form-group"><label>Sampai Tanggal:</label><input type="date" id="cetakTglAkhir"></div></div><div id="formCetakBulanan" style="display:none;"><div class="form-group"><label>Pilih Bulan & Tahun:</label><input type="month" id="cetakBulan"></div></div><div style="display:flex; gap:8px; margin-top:16px;"><button type="button" class="btn btn-outline" onclick="tutupModalCetakPeriode()">Batal</button><button type="button" class="btn btn-pdf" onclick="eksekusiCetakPeriode()">Cetak PDF</button></div></div></div>
-<div class="modal" id="modalKelolaProduk"><div class="modal-content"><h3 style="font-size:1.1rem; font-weight:800;">⚙️ Master Produk</h3><form onsubmit="simpanProdukBaru(event)"><input type="hidden" id="editIndexProduk" value="-1"><div class="form-group"><label>Nama Dasar Produk (Cth: Teh Sosro):</label><input type="text" id="inputNamaProduk" required></div><div class="grid-mobile"><div class="form-group"><label>Kemasan (Cth: Botol Beling):</label><input type="text" id="inputKemasanProduk"></div><div class="form-group"><label>Varian (Cth: Original):</label><input type="text" id="inputVarianProduk"></div></div><div class="grid-mobile" style="margin-top:8px;"><div class="form-group"><label>Modal (Rp):</label><input type="number" id="inputModalProduk" min="0" required oninput="hitungMarginForm()"></div><div class="form-group"><label>Jual (Rp):</label><input type="number" id="inputJualProduk" min="0" required oninput="hitungMarginForm()"></div></div><div class="form-group"><label>Margin / Profit:</label><input type="number" id="inputMarginProduk" readonly style="color:#16a34a; font-weight:bold; background:#f0fdf4;"></div><div style="display:flex; gap:8px; margin-top:12px;"><button type="button" class="btn btn-danger" onclick="tutupModalKelolaProduk()">Batal</button><button type="submit" class="btn btn-success" id="btnSimpanProduk">Simpan</button></div></form><div class="table-wrapper" style="max-height:180px; overflow-y:auto; margin-top:12px;"><table><thead><tr><th>No</th><th style="text-align:left;">Produk</th><th>Mod</th><th>Jual</th><th>Aksi</th></tr></thead><tbody id="tbodyMasterProduk"></tbody></table></div></div></div>
 <div class="modal" id="modalKas"><div class="modal-content"><h3 id="modalKasJudul" style="font-size:1.1rem; font-weight:800;">Kelola Kas</h3><form onsubmit="prosesTransaksiKas(event)"><input type="hidden" id="modalJenisKas"><div class="form-group"><label>Tipe Transaksi:</label><select id="modalTipeTx"><option value="masuk">🟢 SETOR (+)</option><option value="keluar">🔴 TARIK (-)</option></select></div><div class="form-group"><label>Nominal (Rp):</label><input type="number" id="modalNominalTx" required min="1"></div><div class="form-group"><label>Catatan:</label><input type="text" id="modalKetTx" required></div><div style="display:flex; gap:8px; margin-top:16px;"><button type="button" class="btn btn-danger" onclick="tutupModalKas()">Batal</button><button type="submit" class="btn btn-success">Simpan</button></div></form></div></div>
 
 <!-- PDF TEMPLATES -->
@@ -575,19 +612,25 @@
     function prosesLogout() { if(confirm("Keluar dari aplikasi?")) { localStorage.removeItem('baksoUser'); currentUser = null; window.location.reload(); } }
 
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
-    function pilihMenuNav(jenis) { 
+   function pilihMenuNav(jenis) { 
         toggleSidebar(); 
         document.getElementById('viewHarian').style.display = 'none'; 
         document.getElementById('viewOrderVendor').style.display = 'none'; 
         document.getElementById('viewRekapTransfer').style.display = 'none'; 
         document.getElementById('viewMutasiKas').style.display = 'none'; 
         document.getElementById('viewDashboard').style.display = 'none'; 
+        document.getElementById('viewMasterProduk').style.display = 'none'; // Tambahan Baru
         
         if (jenis === 'harian') { document.getElementById('viewHarian').style.display = 'block'; } 
         else if (jenis === 'orderVendor') { document.getElementById('viewOrderVendor').style.display = 'block'; renderTabelOrderVendor(); }
         else if (jenis === 'rekapTransfer') { document.getElementById('viewRekapTransfer').style.display = 'block'; renderViewRekapTransfer(); } 
         else if (jenis === 'mutasiKas') { document.getElementById('viewMutasiKas').style.display = 'block'; hitungAkumulasiKasTotal(); }
         else if (jenis === 'dashboard') { document.getElementById('viewDashboard').style.display = 'block'; renderDashboardGrafik(); }
+        else if (jenis === 'masterProduk') { // Tambahan Baru
+            document.getElementById('viewMasterProduk').style.display = 'block'; 
+            resetFormMasterProduk(); 
+            renderTabelMasterProduk(); 
+        }
     }
     
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka || 0); }
@@ -1110,15 +1153,103 @@
     
     function hapusMutasiKas(docId) { if(db && confirm("Hapus kas ini?")) db.collection('logKas').doc(docId).delete(); }
 
-    function bukaModalKelolaProduk() { document.getElementById('editIndexProduk').value="-1"; document.getElementById('inputNamaProduk').value=""; document.getElementById('inputKemasanProduk').value=""; document.getElementById('inputVarianProduk').value=""; document.getElementById('inputModalProduk').value=""; document.getElementById('inputJualProduk').value=""; document.getElementById('inputMarginProduk').value=""; document.getElementById('btnSimpanProduk').innerText="Simpan"; renderTabelMasterProduk(); document.getElementById('modalKelolaProduk').classList.add('active'); }
-    function tutupModalKelolaProduk() { document.getElementById('modalKelolaProduk').classList.remove('active'); }
-    function hitungMarginForm() { document.getElementById('inputMarginProduk').value=Math.max(0,(parseFloat(document.getElementById('inputJualProduk').value)||0)-(parseFloat(document.getElementById('inputModalProduk').value)||0)); }
-    function simpanProdukBaru(e) { e.preventDefault(); const p={nama:document.getElementById('inputNamaProduk').value.trim(), kemasan:document.getElementById('inputKemasanProduk').value.trim(), varian:document.getElementById('inputVarianProduk').value.trim(), modal:parseFloat(document.getElementById('inputModalProduk').value)||0, jual:parseFloat(document.getElementById('inputJualProduk').value)||0, margin:0}; p.margin=p.jual-p.modal; const idx=parseInt(document.getElementById('editIndexProduk').value); if(idx>=0) masterProduk[idx]=p; else masterProduk.push(p); if(db)db.collection('appData').doc('masterProduk').set({list:masterProduk}).then(()=>{bukaModalKelolaProduk();alert("Berhasil!");}); else{bukaModalKelolaProduk();alert("Lokal OK");} }
-    function renderTabelMasterProduk() { const t=document.getElementById('tbodyMasterProduk'); t.innerHTML=''; masterProduk.forEach((p,i)=>{ const txtKemasan = p.kemasan ? `<br><small>${p.kemasan}</small>` : ''; const txtVarian = p.varian ? ` <span style="font-size:0.65rem; color:#78716c;">(${p.varian})</span>` : ''; t.innerHTML+=`<tr><td>${i+1}</td><td><strong>${p.nama}</strong>${txtVarian}${txtKemasan}</td><td>${p.modal}</td><td>${p.jual}</td><td style="display:flex; gap:4px; padding-top:10px;"><button onclick="editProdukMaster(${i})" class="btn btn-warning" style="padding:4px; font-size:0.7rem; margin:0;">✏️</button><button onclick="hapusProdukMaster(${i})" class="btn btn-danger" style="padding:4px; font-size:0.7rem; margin:0;">🗑️</button></td></tr>`; }); }
-    function editProdukMaster(i) { const p=masterProduk[i]; document.getElementById('editIndexProduk').value=i; document.getElementById('inputNamaProduk').value=p.nama; document.getElementById('inputKemasanProduk').value=p.kemasan||''; document.getElementById('inputVarianProduk').value=p.varian||''; document.getElementById('inputModalProduk').value=p.modal; document.getElementById('inputJualProduk').value=p.jual; hitungMarginForm(); document.getElementById('btnSimpanProduk').innerText="Update"; }
-    function hapusProdukMaster(i) { if(confirm("Hapus dari master?")){ masterProduk.splice(i,1); if(db)db.collection('appData').doc('masterProduk').set({list:masterProduk}); renderTabelMasterProduk(); } }
-    function hapusProduk(i) { if(isDataLocked(document.getElementById('tglOps').value)) return; if(confirm("Sembunyikan produk ini hari ini?")) { const tgl = document.getElementById('tglOps').value; dbStok[tgl].splice(i,1); if(db) db.collection('stokHarian').doc(tgl).set({items: dbStok[tgl]}); renderTabelMatriks(); updateKalkulasi(); } }
+   function resetFormMasterProduk() { 
+        document.getElementById('editIndexProduk').value="-1"; 
+        document.getElementById('inputNamaProduk').value=""; 
+        document.getElementById('inputKemasanProduk').value=""; 
+        document.getElementById('inputVarianProduk').value=""; 
+        document.getElementById('inputModalProduk').value=""; 
+        document.getElementById('inputJualProduk').value=""; 
+        document.getElementById('inputMarginProduk').value=""; 
+        document.getElementById('btnSimpanProduk').innerText="Simpan Produk"; 
+    }
+    
+    function hitungMarginForm() { 
+        document.getElementById('inputMarginProduk').value=Math.max(0,(parseFloat(document.getElementById('inputJualProduk').value)||0)-(parseFloat(document.getElementById('inputModalProduk').value)||0)); 
+    }
+    
+    function simpanProdukBaru(e) { 
+        e.preventDefault(); 
+        const p = {
+            nama: document.getElementById('inputNamaProduk').value.trim(), 
+            kemasan: document.getElementById('inputKemasanProduk').value.trim(), 
+            varian: document.getElementById('inputVarianProduk').value.trim(), 
+            modal: parseFloat(document.getElementById('inputModalProduk').value)||0, 
+            jual: parseFloat(document.getElementById('inputJualProduk').value)||0, 
+            margin: 0
+        }; 
+        p.margin = p.jual - p.modal; 
+        
+        const idx = parseInt(document.getElementById('editIndexProduk').value); 
+        if(idx >= 0) masterProduk[idx] = p; 
+        else masterProduk.push(p); 
+        
+        if(db) {
+            db.collection('appData').doc('masterProduk').set({list:masterProduk}).then(() => {
+                resetFormMasterProduk();
+                renderTabelMasterProduk();
+                showToast("✅ Produk Berhasil Disimpan!");
+            }); 
+        } else {
+            resetFormMasterProduk();
+            renderTabelMasterProduk();
+            showToast("✅ Disimpan Lokal");
+        } 
+    }
+    
+    function renderTabelMasterProduk() { 
+        const t = document.getElementById('tbodyMasterProduk'); 
+        t.innerHTML = ''; 
+        masterProduk.forEach((p,i) => { 
+            const txtKemasan = p.kemasan ? `<br><small style="color:#78716c;">${p.kemasan}</small>` : ''; 
+            const txtVarian = p.varian ? ` <span style="font-size:0.7rem; color:#b45309; font-weight:bold;">(${p.varian})</span>` : ''; 
+            t.innerHTML += `<tr>
+                <td style="text-align:center;">${i+1}</td>
+                <td><div style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}${txtVarian}</div>${txtKemasan}</td>
+                <td>${formatRupiah(p.modal)}</td>
+                <td>${formatRupiah(p.jual)}</td>
+                <td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td>
+                <td style="display:flex; gap:6px; padding-top:10px;">
+                    <button onclick="editProdukMaster(${i})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button>
+                    <button onclick="hapusProdukMaster(${i})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button>
+                </td>
+            </tr>`; 
+        }); 
+    }
+    
+    function editProdukMaster(i) { 
+        const p = masterProduk[i]; 
+        document.getElementById('editIndexProduk').value = i; 
+        document.getElementById('inputNamaProduk').value = p.nama; 
+        document.getElementById('inputKemasanProduk').value = p.kemasan || ''; 
+        document.getElementById('inputVarianProduk').value = p.varian || ''; 
+        document.getElementById('inputModalProduk').value = p.modal; 
+        document.getElementById('inputJualProduk').value = p.jual; 
+        hitungMarginForm(); 
+        document.getElementById('btnSimpanProduk').innerText = "Update Produk"; 
+        window.scrollTo(0, 0); // Gulir ke atas otomatis saat klik edit
+    }
+    
+    function hapusProdukMaster(i) { 
+        if(confirm("Yakin ingin menghapus produk ini dari Master Data?")){ 
+            masterProduk.splice(i,1); 
+            if(db) db.collection('appData').doc('masterProduk').set({list:masterProduk}); 
+            renderTabelMasterProduk(); 
+        } 
+    }
 
+    // FUNGSI INI TETAP DIPERTAHANKAN UNTUK TABEL HARIAN
+    function hapusProduk(i) { 
+        if(isDataLocked(document.getElementById('tglOps').value)) return; 
+        if(confirm("Sembunyikan produk ini hari ini?")) { 
+            const tgl = document.getElementById('tglOps').value; 
+            dbStok[tgl].splice(i,1); 
+            if(db) db.collection('stokHarian').doc(tgl).set({items: dbStok[tgl]}); 
+            renderTabelMatriks(); 
+            updateKalkulasi(); 
+        } 
+    }
+    
     function bukaModalKas(jenis, tipe) { document.getElementById('modalJenisKas').value=jenis; document.getElementById('modalTipeTx').value=tipe; document.getElementById('modalKasJudul').innerText=`⚡ Dompet ${jenis}`; document.getElementById('modalKas').classList.add('active'); }
     function tutupModalKas() { document.getElementById('modalKas').classList.remove('active'); }
     function prosesTransaksiKas(e) { e.preventDefault(); if(!db)return; db.collection('logKas').add({ tgl:document.getElementById('tglOps').value, jenis:document.getElementById('modalJenisKas').value, tipe:document.getElementById('modalTipeTx').value, nominal:parseFloat(document.getElementById('modalNominalTx').value)||0, ket:document.getElementById('modalKetTx').value }).then(tutupModalKas); }
