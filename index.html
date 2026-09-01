@@ -494,16 +494,13 @@
                     <h2 style="color: #b45309; margin:0;">🏦 Rekap Transfer Dompet</h2>
                     <button onclick="generatePDFTransfer()" class="btn btn-pdf" style="width:auto; padding:6px 12px; font-size:0.75rem; margin:0; border-radius:12px;">🖨️ Cetak PDF</button>
                 </div>
-        <!-- 7. VIEW LAPORAN BARU -->
-        <div id="viewLaporanBaru" style="display:none; margin-bottom: 40px;">
-            <div class="card" style="border-top: 4px solid #4ade80;">
-                <h2 style="color: #166534;">📊 Laporan Mingguan & Bulanan</h2>
-                <div style="padding: 20px; text-align: center; color: #78716c;">
-                    <span style="font-size: 2rem;">🚧</span><br>
-                    <b>Halaman sedang diracik...</b>
+        <!-- 6. VIEW REKAP TRANSFER -->
+        <div id="viewRekapTransfer" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #f59e0b;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+                    <h2 style="color: #b45309; margin:0;">🏦 Rekap Transfer Dompet</h2>
+                    <button onclick="generatePDFTransfer()" class="btn btn-pdf" style="width:auto; padding:6px 12px; font-size:0.75rem; margin:0; border-radius:12px;">🖨️ Cetak PDF</button>
                 </div>
-            </div>
-        </div>
                 <div class="grid-mobile">
                     <div class="summary-box" style="background:#fafaf9; border-color:#d6d3d1;">
                         <h4 style="color:#44403c; font-size:0.85rem; font-weight:800; margin-bottom:10px; text-transform:uppercase;">📥 (A) Rincian Omset Seharusnya</h4>
@@ -525,10 +522,98 @@
                     <div id="rtFinalKet" style="font-size:0.8rem; font-weight:700; line-height:1.4;"></div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+        </div> <!-- Penutup viewRekapTransfer -->
 
+        <!-- 7. VIEW LAPORAN BARU -->
+        <div id="viewLaporanBaru" style="display:none; margin-bottom: 40px;">
+            <div class="card" style="border-top: 4px solid #4ade80;">
+                <h2 style="color: #166534; margin-bottom: 15px;">📊 Laporan Rekapitulasi</h2>
+                
+                <!-- Filter Laporan -->
+                <div class="summary-box" style="background: #f0fdf4; border-color: #86efac; margin-bottom: 16px; padding: 14px;">
+                    <div class="grid-mobile">
+                        <div class="form-group">
+                            <label>Jenis Laporan:</label>
+                            <select id="lapJenisTipe" onchange="gantiModeFilterLaporan(this.value)" style="font-weight: 700;">
+                                <option value="mingguan">📅 Rekap Mingguan / Rentang Tanggal</option>
+                                <option value="bulanan">🗓️ Rekap Bulanan</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Input Rentang Tanggal -->
+                        <div id="boxFilterMingguan" class="grid-mobile">
+                            <div class="form-group">
+                                <label>Dari Tanggal:</label>
+                                <input type="date" id="lapTglAwal">
+                            </div>
+                            <div class="form-group">
+                                <label>Sampai Tanggal:</label>
+                                <input type="date" id="lapTglAkhir">
+                            </div>
+                        </div>
+
+                        <!-- Input Bulan -->
+                        <div id="boxFilterBulanan" class="form-group" style="display:none;">
+                            <label>Pilih Bulan & Tahun:</label>
+                            <input type="month" id="lapBulanPick">
+                        </div>
+                    </div>
+
+                    <button onclick="prosesTampilkanLaporan()" class="btn btn-success" style="margin-top: 10px; padding: 10px; font-size: 0.85rem; font-weight: 800;">
+                        🔍 TAMPILKAN PREVIEW LAPORAN
+                    </button>
+                </div>
+
+                <!-- Ringkasan Hasil Filter -->
+                <div id="boxHasilLaporan" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                        <span id="txtLabelPeriodeLaporan" style="font-weight:800; color:#166534; font-size:0.95rem;">-</span>
+                        <button onclick="cetakPDFDariPreview()" class="btn btn-pdf" style="width:auto; padding:6px 14px; font-size:0.75rem; margin:0; border-radius:8px;">🖨️ Cetak PDF</button>
+                    </div>
+
+                    <div class="grid-mobile" style="margin-bottom: 15px;">
+                        <div class="summary-box" style="background:#fffbeb; border-color:#fde68a;">
+                            <div class="summary-item"><span>Total Omset Kotor:</span><strong id="lapValOmset" style="color:#d97706;">Rp 0</strong></div>
+                            <div class="summary-item"><span>Modal Belanja Produk:</span><strong id="lapValModal" style="color:#b45309;">Rp 0</strong></div>
+                            <div class="summary-item bold" style="color:#15803d; border-top:1px dashed #fde68a; padding-top:6px; margin-top:4px;">
+                                <span>TOTAL PROFIT BERSIH:</span><span id="lapValProfit">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <div class="summary-box" style="background:#f0fdf4; border-color:#86efac;">
+                            <div class="summary-item"><span>Hak Partner (40%):</span><strong id="lapValPartner" style="color:#0369a1;">Rp 0</strong></div>
+                            <div class="summary-item bold" style="color:#b45309; border-top:1px dashed #86efac; padding-top:6px; margin-top:4px;">
+                                <span>Hak Anda (60%):</span><span id="lapValOwner">Rp 0</span>
+                            </div>
+                            <div id="txtNotifOperasionalOwner" style="font-size:0.65rem; color:#dc2626; margin-top:4px; font-weight:600; display:none;">
+                                *Sudah dipotong operational Rp 25.000 untuk rekap mingguan.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Detail Produk Terjual -->
+                    <h3 style="font-size:0.9rem; font-weight:800; color:#292524; margin-bottom:8px;">📦 Detail Barang Terjual</h3>
+                    <div class="table-wrapper" style="max-height: 400px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Nama Produk</th>
+                                    <th style="text-align:left;">Kemasan & Varian</th>
+                                    <th>Terjual</th>
+                                    <th>Total Omset</th>
+                                    <th>Profit Bersih</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyLaporanPreview"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div> <!-- Penutup View Laporan Baru -->
+
+    </div> <!-- Penutup Container Utama -->
+</div> <!-- Penutup appScreen -->
 <!-- MODALS -->
 <div class="modal" id="modalTambahVendor">
     <div class="modal-content">
@@ -1711,6 +1796,150 @@ function bukaLayarAplikasi() {
             event.target.value = ''; // Reset input agar bisa import file yang sama lagi jika perlu
         }; 
         reader.readAsText(file); 
+    }
+function gantiModeFilterLaporan(mode) {
+        if (mode === 'mingguan') {
+            document.getElementById('boxFilterMingguan').style.display = 'grid';
+            document.getElementById('boxFilterBulanan').style.display = 'none';
+        } else {
+            document.getElementById('boxFilterMingguan').style.display = 'none';
+            document.getElementById('boxFilterBulanan').style.display = 'block';
+        }
+    }
+
+    let dataCacheLaporan = null;
+
+    function prosesTampilkanLaporan() {
+        const mode = document.getElementById('lapJenisTipe').value;
+        let validKeys = [];
+        let labelPeriode = "";
+
+        if (mode === 'mingguan') {
+            const start = document.getElementById('lapTglAwal').value;
+            const end = document.getElementById('lapTglAkhir').value;
+            if (!start || !end) { alert("Pilih rentang tanggal awal dan akhir!"); return; }
+            Object.keys(dbStok).forEach(tgl => { if (tgl >= start && tgl <= end) validKeys.push(tgl); });
+            labelPeriode = `Periode: ${start} s/d ${end}`;
+        } else {
+            const bln = document.getElementById('lapBulanPick').value;
+            if (!bln) { alert("Pilih bulan dan tahun!"); return; }
+            Object.keys(dbStok).forEach(tgl => { if (tgl.startsWith(bln)) validKeys.push(tgl); });
+            labelPeriode = `Periode: Bulan ${bln}`;
+        }
+
+        let omsetTotal = 0, modalTotal = 0, profitTotal = 0;
+        let rekapMap = {};
+
+        // Inisialisasi daftar produk dari master
+        masterProduk.forEach(mp => {
+            const key = `${mp.nama}_${mp.kemasan || ''}_${mp.varian || ''}`;
+            rekapMap[key] = { ...mp, totalTerjual: 0, totalOmset: 0, totalProfit: 0 };
+        });
+
+        validKeys.forEach(tgl => {
+            (dbStok[tgl] || []).forEach(p => {
+                const awal = parseFloat(p.awal) || 0;
+                const tambah = parseFloat(p.tambah) || 0;
+                const kurang = parseFloat(p.kurang) || 0;
+                const totalStok = awal + tambah - kurang;
+                const sisa = (p.sisa !== "" && p.sisa !== null) ? parseFloat(p.sisa) : null;
+
+                if (sisa !== null && sisa <= totalStok) {
+                    const terjual = totalStok - sisa;
+                    if (terjual > 0) {
+                        const key = `${p.nama}_${p.kemasan || ''}_${p.varian || ''}`;
+                        if (!rekapMap[key]) {
+                            rekapMap[key] = { ...p, totalTerjual: 0, totalOmset: 0, totalProfit: 0 };
+                        }
+                        rekapMap[key].totalTerjual += terjual;
+                        rekapMap[key].totalOmset += (terjual * p.jual);
+                        rekapMap[key].totalProfit += (terjual * p.margin);
+
+                        modalTotal += (terjual * p.modal);
+                        profitTotal += (terjual * p.margin);
+                        omsetTotal += (terjual * p.jual);
+                    }
+                }
+            });
+        });
+
+        const basisAlokasi = Math.max(0, profitTotal);
+        const hakPartner = basisAlokasi * 0.40;
+        let hakOwner = basisAlokasi * 0.60;
+        let isMingguan = mode === 'mingguan';
+
+        if (isMingguan) {
+            hakOwner = Math.max(0, hakOwner - 25000);
+            document.getElementById('txtNotifOperasionalOwner').style.display = 'block';
+        } else {
+            document.getElementById('txtNotifOperasionalOwner').style.display = 'none';
+        }
+
+        // Tampilkan Ringkasan Keuangan
+        document.getElementById('txtLabelPeriodeLaporan').innerText = labelPeriode;
+        document.getElementById('lapValOmset').innerText = formatRupiah(omsetTotal);
+        document.getElementById('lapValModal').innerText = formatRupiah(modalTotal);
+        document.getElementById('lapValProfit').innerText = formatRupiah(profitTotal);
+        document.getElementById('lapValPartner').innerText = formatRupiah(hakPartner);
+        document.getElementById('lapValOwner').innerText = formatRupiah(hakOwner);
+
+        // Render Tabel Riwayat Produk
+        const tbody = document.getElementById('tbodyLaporanPreview');
+        tbody.innerHTML = '';
+        const listTerjual = Object.values(rekapMap).filter(item => item.totalTerjual > 0);
+
+        if (listTerjual.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#78716c; padding:15px;">Tidak ada transaksi terjual pada periode ini.</td></tr>`;
+        } else {
+            listTerjual.forEach(p => {
+                tbody.innerHTML += `<tr>
+                    <td><strong>${p.nama}</strong></td>
+                    <td><small style="color:#57534e;">${p.kemasan || '-'}</small> / <small style="color:#b45309; font-weight:bold;">${p.varian || '-'}</small></td>
+                    <td style="text-align:center; font-weight:bold;">${p.totalTerjual}</td>
+                    <td style="text-align:right;">${formatRupiah(p.totalOmset)}</td>
+                    <td style="text-align:right; color:#16a34a; font-weight:bold;">${formatRupiah(p.totalProfit)}</td>
+                </tr>`;
+            });
+        }
+
+        // Simpan data di memori untuk keperluan Cetak PDF
+        dataCacheLaporan = { mode, labelPeriode, omsetTotal, modalTotal, profitTotal, hakPartner, hakOwner, listTerjual };
+        document.getElementById('boxHasilLaporan').style.display = 'block';
+    }
+
+    function cetakPDFDariPreview() {
+        if (!dataCacheLaporan || typeof html2pdf === 'undefined') return;
+
+        document.getElementById('pdfJudulPeriode').innerText = dataCacheLaporan.mode === 'mingguan' ? 'LAPORAN MINGGUAN' : 'LAPORAN BULANAN';
+        document.getElementById('pdfTglPeriode').innerText = dataCacheLaporan.labelPeriode;
+        document.getElementById('pdfTotalOmset').innerText = formatRupiah(dataCacheLaporan.omsetTotal);
+        document.getElementById('pdfTotalModal').innerText = formatRupiah(dataCacheLaporan.modalTotal);
+        document.getElementById('pdfTotalProfitBersih').innerText = formatRupiah(dataCacheLaporan.profitTotal);
+        document.getElementById('pdfAllocPartner').innerText = formatRupiah(dataCacheLaporan.hakPartner);
+        document.getElementById('pdfAllocOwner').innerText = formatRupiah(dataCacheLaporan.hakOwner);
+
+        const pdfTbody = document.getElementById('pdfTbodyProdukPeriode');
+        pdfTbody.innerHTML = '';
+        dataCacheLaporan.listTerjual.forEach(p => {
+            pdfTbody.innerHTML += `<tr>
+                <td><strong>${p.nama}</strong><br><small style="color:#78716c">${p.kemasan || ''}</small></td>
+                <td>${p.varian || '-'}</td>
+                <td style="text-align:center;">${p.totalTerjual}</td>
+                <td style="text-align:right;">${formatRupiah(p.totalOmset)}</td>
+                <td style="text-align:right;">${formatRupiah(p.totalProfit)}</td>
+            </tr>`;
+        });
+
+        const element = document.getElementById('pdfAreaPeriode');
+        element.style.display = 'block';
+        html2pdf().set({
+            margin: 5,
+            filename: `Rekap_${dataCacheLaporan.mode}_${new Date().toISOString().slice(0, 10)}.pdf`,
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(element).save().then(() => {
+            element.style.display = 'none';
+        });
     }
 </script>
 </body>
