@@ -887,14 +887,13 @@
         db.collection('logKas').onSnapshot(snapshot => { dbLogKas = []; snapshot.forEach(doc => { dbLogKas.push({ id: doc.id, ...doc.data() }); }); hitungAkumulasiKasTotal(); });
     }
 
-            // --- PERBAIKAN BUG TARIK DATA SISA KEMARIN ---
+        // --- PERBAIKAN FINAL BUG SISA KEMARIN ---
     function cekDanTarikDataKemarin(tgl) {
         if (isDataLocked(tgl)) return;
         
-        // Memecah tanggal manual agar kebal dari BUG Timezone Javascript
         let [y, m, d] = tgl.split('-'); 
         let dateObj = new Date(y, m - 1, d); 
-        dateObj.setDate(dateObj.getDate() - 1); // Mundur 1 hari
+        dateObj.setDate(dateObj.getDate() - 1); 
         let tglKemarin = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
         
         let isKemarinLocked = dbStatusKunci[tglKemarin] === true; 
@@ -906,34 +905,37 @@
                 if (isKemarinLocked) {
                     dbStok[tgl].forEach((p, idx) => {
                         if (p.awal === "" || p.awal === null || p.awal === undefined) {
-                            // Cari produk yang sama di tanggal kemarin
-                            let pKemarin = dbStok[tglKemarin].find(x => x.nama === p.nama && x.kemasan === p.kemasan && x.varian === p.varian);
-                            if(!pKemarin) pKemarin = dbStok[tglKemarin].find(x => x.nama === p.nama); 
+                            // Pencarian yang lebih akurat dan kebal huruf besar/kecil/spasi
+                            let pKemarin = dbStok[tglKemarin].find(x => 
+                                (x.nama||'').trim().toLowerCase() === (p.nama||'').trim().toLowerCase() && 
+                                (x.kemasan||'').trim().toLowerCase() === (p.kemasan||'').trim().toLowerCase() && 
+                                (x.varian||'').trim().toLowerCase() === (p.varian||'').trim().toLowerCase()
+                            );
+                            
+                            if (!pKemarin) pKemarin = dbStok[tglKemarin].find(x => (x.nama||'').trim().toLowerCase() === (p.nama||'').trim().toLowerCase()); 
                             
                             if (pKemarin) {
-                                // AMBIL LANGSUNG NILAI 'SISA' DARI KEMARIN (Tanpa dihitung ulang)
-                                let sisaKemarin = pKemarin.sisa;
+                                // HITUNG MATEMATIS LANGSUNG DARI SUMBERNYA (Lebih Akurat)
+                                const aw = parseFloat(pKemarin.awal) || 0; 
+                                const tb = parseFloat(pKemarin.tambah) || 0; 
+                                const kr = parseFloat(pKemarin.kurang) || 0;
+                                const tj = parseFloat(pKemarin.terjual) || 0;
                                 
-                                // Pastikan nilainya berupa angka, jika kosong jadikan 0
-                                sisaKemarin = (sisaKemarin !== "" && sisaKemarin !== null && sisaKemarin !== undefined) ? parseFloat(sisaKemarin) : 0;
+                                let sisaHitung = (aw + tb - kr) - tj;
+                                if (sisaHitung < 0) sisaHitung = 0; // Cegah minus
                                 
-                                // Cegah nilai minus (kalau kemarin ada salah ketik)
-                                if(sisaKemarin < 0) sisaKemarin = 0;
-                                
-                                // Masukkan ke Stok Awal hari ini
-                                dbStok[tgl][idx].awal = sisaKemarin; 
+                                dbStok[tgl][idx].awal = sisaHitung; 
                                 needsUpdateUI = true;
                             }
                         }
                     });
                     
-                    // Simpan ke database
                     if (needsUpdateUI && db) { 
                         db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }); 
                     }
                 } else {
                     if (hasAlertedTgl !== tgl) { 
-                        alert(`⚠️ Data tanggal ${tglKemarin} BELUM DIGEMBOK!\nBuka tanggal ${tglKemarin} lalu klik '🔓 BUKA' menjadi '🔒 TERKUNCI' agar stok sisa otomatis masuk ke stok awal hari ini.`); 
+                        alert(`⚠️ Data tanggal ${tglKemarin} BELUM DIGEMBOK!\nBuka tanggal ${tglKemarin} lalu klik '🔓 BUKA' menjadi '🔒 TERKUNCI' agar stok sisa otomatis ditarik.`); 
                         hasAlertedTgl = tgl; 
                     }
                 }
@@ -944,8 +946,6 @@
             updateKalkulasi(); 
         }
     }
-
-
     function syncStokDenganMaster(tgl) { 
         if (!dbStok[tgl]) { dbStok[tgl] = masterProduk.map(p => ({ ...p, awal: "", tambah: "", kurang: "", terjual: "", sisa: "" })); } 
         else { 
