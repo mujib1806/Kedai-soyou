@@ -887,7 +887,7 @@
         db.collection('logKas').onSnapshot(snapshot => { dbLogKas = []; snapshot.forEach(doc => { dbLogKas.push({ id: doc.id, ...doc.data() }); }); hitungAkumulasiKasTotal(); });
     }
 
-        // --- PERBAIKAN BUG TARIK DATA SISA KEMARIN ---
+            // --- PERBAIKAN BUG TARIK DATA SISA KEMARIN ---
     function cekDanTarikDataKemarin(tgl) {
         if (isDataLocked(tgl)) return;
         
@@ -944,6 +944,7 @@
             updateKalkulasi(); 
         }
     }
+
 
     function syncStokDenganMaster(tgl) { 
         if (!dbStok[tgl]) { dbStok[tgl] = masterProduk.map(p => ({ ...p, awal: "", tambah: "", kurang: "", terjual: "", sisa: "" })); } 
