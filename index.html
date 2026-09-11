@@ -306,7 +306,16 @@
        <!-- 2. VIEW DASHBOARD -->
         <div id="viewDashboard" style="display:none; margin-bottom: 40px;">
             <div class="card" style="border-top: 4px solid #f59e0b;">
-                <h2 style="color: #b45309; margin-bottom: 12px;">📈 Dashboard Analisa (7 Hari)</h2>
+                <!-- HEADER DASHBOARD DENGAN GLOBAL FILTER -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                    <h2 style="color: #b45309; margin:0;">📈 Dashboard Analisa</h2>
+                    <select id="filterGlobalDashboard" onchange="renderDashboardGrafik()" style="width:auto; padding:6px 10px; font-size:0.8rem; border-radius:8px; font-weight:700; border:2px solid #d6d3d1;">
+                        <option value="7">7 Hari Terakhir</option>
+                        <option value="30">30 Hari Terakhir</option>
+                        <option value="all">Semua Waktu</option>
+                    </select>
+                </div>
+                
                 <div class="grid-mobile" style="margin-bottom: 15px;">
                     <div class="summary-box" style="background:#fff; border-color:#d6d3d1; text-align:center;">
                         <span style="font-size:0.75rem; font-weight:800; color:#57534e; text-transform:uppercase;">TOTAL OMSET</span>
@@ -323,15 +332,11 @@
                     <div class="chart-container"><canvas id="chartTren"></canvas></div>
                 </div>
 
-                <!-- AWAL TAMBAHAN: TABEL TOP 10 PRODUK -->
+                <!-- TABEL TOP 10 DENGAN FILTER PENGECUALIAN -->
                 <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--border-color);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <h3 style="font-size:0.9rem; font-weight:800; color:#292524;">🏆 Top 10 Produk Terlaris</h3>
-                    <select id="filterTop10" onchange="renderTop10Produk()" style="width:auto; padding:6px 10px; font-size:0.75rem; border-radius:8px; font-weight:700; border:2px solid #d6d3d1;">
-                        <option value="7">7 Hari Terakhir</option>
-                        <option value="30">30 Hari Terakhir</option>
-                        <option value="all">Semua Waktu</option>
-                    </select>
+                    <input type="text" id="inputPengecualianTop10" placeholder="Kecualikan (cth: Es, Plastik)" oninput="renderTop10Produk()" style="width:180px; padding:6px 10px; font-size:0.75rem; border-radius:8px; border:2px solid #d6d3d1;">
                 </div>
                 <div class="table-wrapper">
                     <table>
@@ -346,8 +351,6 @@
                         <tbody id="tbodyTop10Produk"></tbody>
                     </table>
                 </div>
-                <!-- AKHIR TAMBAHAN: TABEL TOP 10 PRODUK -->
-
             </div>
         </div>
 
