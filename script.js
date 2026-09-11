@@ -136,7 +136,26 @@
         else if (jenis === 'laporan') { if(document.getElementById('viewLaporanBaru')) document.getElementById('viewLaporanBaru').style.display = 'block'; }
     }
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka || 0); }
+    // --- FUNGSI HELPER RASIO BAGI HASIL ---
+function getRasioHariIni(tgl) {
+    if (dbKasMasuk[tgl] && dbKasMasuk[tgl].rasioOwner !== undefined) {
+        return parseFloat(dbKasMasuk[tgl].rasioOwner);
+    }
+    return 60; // Angka default/historis masa lalu jika rasio belum ada
+}
 
+function updateRasioHarian(valOwner) {
+    let pOwner = parseFloat(valOwner) || 0;
+    if (pOwner > 100) pOwner = 100;
+    if (pOwner < 0) pOwner = 0;
+    let pPartner = 100 - pOwner;
+    
+    document.getElementById('inRasioPartner').value = pPartner;
+    document.getElementById('txtLabelRasioPartner').innerText = pPartner;
+    document.getElementById('txtLabelRasioOwner').innerText = pOwner;
+    
+    updateKalkulasi(); // Update nominal Rupiah seketika
+}
     // --- LAPORAN BARU ---
     function gantiModeFilterLaporan(mode) {
         if (mode === 'mingguan') { document.getElementById('boxFilterMingguan').style.display = 'grid'; document.getElementById('boxFilterBulanan').style.display = 'none'; } 
@@ -386,9 +405,32 @@
     }
     
     function simpanStokOtomatis() { const tgl = document.getElementById('tglOps').value; if(isDataLocked(tgl)) return; if(!db) return; db.collection('stokHarian').doc(tgl).set({ items: dbStok[tgl] }).then(() => { if (navigator.onLine) showToast('✅ Tersimpan otomatis!'); }); }
-    function simpanKasMasuk(isAutoTrigger = false) { const tgl = document.getElementById('tglOps').value; if(isDataLocked(tgl)) return; if(!db) return; const kasData = { cash: parseFloat(document.getElementById('inCash').value) || 0, qris: parseFloat(document.getElementById('inQris').value) || 0 }; db.collection('kasMasuk').doc(tgl).set(kasData).then(() => { if (isAutoTrigger && navigator.onLine) showToast('✅ Tersimpan otomatis!'); }); }
-    function loadKasMasukUI() { const kas = dbKasMasuk[document.getElementById('tglOps').value] || { cash: 0, qris: 0 }; document.getElementById('inCash').value = kas.cash; document.getElementById('inQris').value = kas.qris; }
+    function simpanKasMasuk(isAutoTrigger = false) { 
+    const tgl = document.getElementById('tglOps').value; 
+    if(isDataLocked(tgl)) return; 
+    if(!db) return; 
+    
+    const kasData = { 
+        cash: parseFloat(document.getElementById('inCash').value) || 0, 
+        qris: parseFloat(document.getElementById('inQris').value) || 0,
+        rasioOwner: parseFloat(document.getElementById('inRasioOwner').value) || 60
+    }; 
+    db.collection('kasMasuk').doc(tgl).set(kasData).then(() => { 
+        if (isAutoTrigger && navigator.onLine) showToast('✅ Tersimpan otomatis!'); 
+    }); 
+}
 
+function loadKasMasukUI() { 
+    const tgl = document.getElementById('tglOps').value;
+    const kas = dbKasMasuk[tgl] || { cash: 0, qris: 0, rasioOwner: 60 }; 
+    document.getElementById('inCash').value = kas.cash; 
+    document.getElementById('inQris').value = kas.qris; 
+    
+    // Tarik nilai rasio dari database (Default 60 jika kosong)
+    let pOwner = kas.rasioOwner !== undefined ? kas.rasioOwner : 60;
+    document.getElementById('inRasioOwner').value = pOwner;
+    updateRasioHarian(pOwner);
+}
     // --- PERBAIKAN BUG OMSET (Fokus Terjual) ---
     function updateKalkulasi() {
         const tgl = document.getElementById('tglOps').value; if (!dbStok[tgl] || !Array.isArray(dbStok[tgl])) return;
