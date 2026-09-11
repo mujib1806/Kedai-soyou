@@ -162,6 +162,7 @@ function updateRasioHarian(valOwner) {
         else { document.getElementById('boxFilterMingguan').style.display = 'none'; document.getElementById('boxFilterBulanan').style.display = 'block'; }
     }
 
+// 5. PROSES TAMPILKAN LAPORAN
     function prosesTampilkanLaporan() {
         const mode = document.getElementById('lapJenisTipe').value; let validKeys = []; let labelPeriode = "";
         if (mode === 'mingguan') {
@@ -172,10 +173,13 @@ function updateRasioHarian(valOwner) {
             const bln = document.getElementById('lapBulanPick').value; if (!bln) { alert("Pilih bulan dan tahun!"); return; }
             Object.keys(dbStok).forEach(tgl => { if (tgl.startsWith(bln)) validKeys.push(tgl); }); labelPeriode = `Periode: Bulan ${bln}`;
         }
+        
         let omsetTotal = 0, modalTotal = 0, profitTotal = 0; let rekapMap = {};
+        let hakPartnerTotal = 0, hakOwnerTotal = 0;
         masterProduk.forEach(mp => { const key = `${mp.nama}_${mp.kemasan || ''}_${mp.varian || ''}`; rekapMap[key] = { ...mp, totalTerjual: 0, totalOmset: 0, totalProfit: 0 }; });
 
         validKeys.forEach(tgl => {
+            let harianProfit = 0;
             (dbStok[tgl] || []).forEach(p => {
                 const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0;
                 if (terjual > 0) {
@@ -183,23 +187,27 @@ function updateRasioHarian(valOwner) {
                     if (!rekapMap[key]) { rekapMap[key] = { ...p, totalTerjual: 0, totalOmset: 0, totalProfit: 0 }; }
                     rekapMap[key].totalTerjual += terjual; rekapMap[key].totalOmset += (terjual * p.jual); rekapMap[key].totalProfit += (terjual * p.margin);
                     modalTotal += (terjual * p.modal); profitTotal += (terjual * p.margin); omsetTotal += (terjual * p.jual);
+                    harianProfit += (terjual * p.margin);
                 }
             });
+            const basisHarian = Math.max(0, harianProfit);
+            const pOwner = getRasioHariIni(tgl);
+            const pPartner = 100 - pOwner;
+            hakPartnerTotal += (basisHarian * (pPartner / 100));
+            hakOwnerTotal += (basisHarian * (pOwner / 100));
         });
 
-        const basisAlokasi = Math.max(0, profitTotal); const hakPartner = basisAlokasi * 0.40; let hakOwner = basisAlokasi * 0.60;
-        if (mode === 'mingguan') { hakOwner = Math.max(0, hakOwner - 25000); document.getElementById('txtNotifOperasionalOwner').style.display = 'block'; } 
+        if (mode === 'mingguan') { hakOwnerTotal = Math.max(0, hakOwnerTotal - 25000); document.getElementById('txtNotifOperasionalOwner').style.display = 'block'; } 
         else { document.getElementById('txtNotifOperasionalOwner').style.display = 'none'; }
 
-        document.getElementById('txtLabelPeriodeLaporan').innerText = labelPeriode; document.getElementById('lapValOmset').innerText = formatRupiah(omsetTotal); document.getElementById('lapValModal').innerText = formatRupiah(modalTotal); document.getElementById('lapValProfit').innerText = formatRupiah(profitTotal); document.getElementById('lapValPartner').innerText = formatRupiah(hakPartner); document.getElementById('lapValOwner').innerText = formatRupiah(hakOwner);
+        document.getElementById('txtLabelPeriodeLaporan').innerText = labelPeriode; document.getElementById('lapValOmset').innerText = formatRupiah(omsetTotal); document.getElementById('lapValModal').innerText = formatRupiah(modalTotal); document.getElementById('lapValProfit').innerText = formatRupiah(profitTotal); document.getElementById('lapValPartner').innerText = formatRupiah(hakPartnerTotal); document.getElementById('lapValOwner').innerText = formatRupiah(hakOwnerTotal);
         const tbody = document.getElementById('tbodyLaporanPreview'); tbody.innerHTML = '';
         const listTerjual = Object.values(rekapMap).filter(item => item.totalTerjual > 0);
         if (listTerjual.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#78716c; padding:15px;">Tidak ada transaksi terjual.</td></tr>`; } 
         else { listTerjual.forEach(p => { tbody.innerHTML += `<tr><td><strong>${p.nama}</strong></td><td><small style="color:#57534e;">${p.kemasan || '-'}</small> / <small style="color:#b45309; font-weight:bold;">${p.varian || '-'}</small></td><td style="text-align:center; font-weight:bold;">${p.totalTerjual}</td><td style="text-align:right;">${formatRupiah(p.totalOmset)}</td><td style="text-align:right; color:#16a34a; font-weight:bold;">${formatRupiah(p.totalProfit)}</td></tr>`; }); }
-        dataCacheLaporan = { mode, labelPeriode, omsetTotal, modalTotal, profitTotal, hakPartner, hakOwner, listTerjual };
+        dataCacheLaporan = { mode, labelPeriode, omsetTotal, modalTotal, profitTotal, hakPartner: hakPartnerTotal, hakOwner: hakOwnerTotal, listTerjual };
         document.getElementById('boxHasilLaporan').style.display = 'block';
     }
-
     function cetakPDFDariPreview() {
         if (!dataCacheLaporan || typeof html2pdf === 'undefined') { alert("Data laporan kosong. Tampilkan preview terlebih dahulu!"); return; }
         document.getElementById('pdfJudulPeriode').innerText = dataCacheLaporan.mode === 'mingguan' ? 'LAPORAN MINGGUAN' : 'LAPORAN BULANAN'; document.getElementById('pdfTglPeriode').innerText = dataCacheLaporan.labelPeriode; document.getElementById('pdfTotalOmset').innerText = formatRupiah(dataCacheLaporan.omsetTotal); document.getElementById('pdfTotalModal').innerText = formatRupiah(dataCacheLaporan.modalTotal); document.getElementById('pdfTotalProfitBersih').innerText = formatRupiah(dataCacheLaporan.profitTotal); document.getElementById('pdfAllocPartner').innerText = formatRupiah(dataCacheLaporan.hakPartner); document.getElementById('pdfAllocOwner').innerText = formatRupiah(dataCacheLaporan.hakOwner);
@@ -431,7 +439,7 @@ function loadKasMasukUI() {
     document.getElementById('inRasioOwner').value = pOwner;
     updateRasioHarian(pOwner);
 }
-    // --- PERBAIKAN BUG OMSET (Fokus Terjual) ---
+   // 1. UPDATE KALKULASI HARIAN
     function updateKalkulasi() {
         const tgl = document.getElementById('tglOps').value; if (!dbStok[tgl] || !Array.isArray(dbStok[tgl])) return;
         const items = dbStok[tgl]; let totalOmset = 0, totalModalBelanja = 0, totalProfit = 0; 
@@ -452,19 +460,31 @@ function loadKasMasukUI() {
         else { elSelisih.innerText = "Rp 0 (Pas)"; elSelisih.style.color = "#292524"; boxEstimasi.innerHTML = `<span style="color:#78716c;">✅ Tidak ada selisih. Uang sesuai Omset!</span>`; }
 
         document.getElementById('allocModalBelanja').innerText = formatRupiah(totalModalBelanja); document.getElementById('totalProfitBersih').innerText = formatRupiah(totalProfit); 
-        let basisAlokasi = Math.max(0, totalProfit); document.getElementById('allocPartner').innerText = formatRupiah(basisAlokasi * 0.40); document.getElementById('allocOwner').innerText = formatRupiah(basisAlokasi * 0.60); 
+        let basisAlokasi = Math.max(0, totalProfit); 
+        
+        // Tarik Rasio Dinamis
+        const pOwner = getRasioHariIni(tgl);
+        const pPartner = 100 - pOwner;
+        
+        document.getElementById('allocPartner').innerText = formatRupiah(basisAlokasi * (pPartner / 100)); 
+        document.getElementById('allocOwner').innerText = formatRupiah(basisAlokasi * (pOwner / 100)); 
         
         hitungAkumulasiKasTotal(); renderViewRekapTransfer(); 
         if (currentUser && currentUser.role === 'owner') { if(document.getElementById('viewDashboard').style.display === 'block') renderDashboardGrafik(); }
     }
-
+   // 2. REKAP TRANSFER DOMPET
     function renderViewRekapTransfer() {
         const tgl = document.getElementById('tglOps').value; const items = dbStok[tgl] || []; let totalModalBelanja = 0, profitBersih = 0;
         items.forEach(p => { 
             const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0;
             if (terjual > 0) { profitBersih += (terjual * p.margin); totalModalBelanja += (terjual * p.modal); } 
         });
-        const alokasiBasis = Math.max(0, profitBersih); const hakPartner = alokasiBasis * 0.40; const hakOwner = alokasiBasis * 0.60; const totalA = totalModalBelanja + hakPartner + hakOwner;
+        const alokasiBasis = Math.max(0, profitBersih); 
+        const pOwner = getRasioHariIni(tgl);
+        const pPartner = 100 - pOwner;
+        const hakPartner = alokasiBasis * (pPartner / 100); 
+        const hakOwner = alokasiBasis * (pOwner / 100); 
+        const totalA = totalModalBelanja + hakPartner + hakOwner;
         
         document.getElementById('rtKasModal').innerText = formatRupiah(totalModalBelanja); document.getElementById('rtKasPartner').innerText = formatRupiah(hakPartner); document.getElementById('rtKasOwner').innerText = formatRupiah(hakOwner); document.getElementById('rtTotalA').innerText = formatRupiah(totalA);
         const cashInput = parseFloat(document.getElementById('inCash').value) || 0; const qrisInput = parseFloat(document.getElementById('inQris').value) || 0; const totalB = cashInput + qrisInput;
@@ -475,7 +495,7 @@ function loadKasMasukUI() {
         else if (selisihSetor === 0) { finalBox.style.background = '#f0fdf4'; finalBox.style.border = '2px solid #86efac'; finalValue.style.color = '#15803d'; finalValue.innerText = formatRupiah(0); finalKet.style.color = '#166534'; finalKet.innerText = "✅ BALANCE PERFECT!"; } 
         else { finalBox.style.background = '#eff6ff'; finalBox.style.border = '2px solid #93c5fd'; finalValue.style.color = '#1d4ed8'; finalValue.innerText = `+ ${formatRupiah(selisihSetor)}`; finalKet.style.color = '#1e3a8a'; finalKet.innerText = "✨ SELISIH LEBIH! Ada surplus uang aktual."; }
     }
-
+ // 3. HITUNG AKUMULASI KAS TOTAL
     function hitungAkumulasiKasTotal() { 
         let kasModal = 0, kasPartner = 0, kasOwner = 0; const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
         validDates.forEach(tgl => { 
@@ -484,7 +504,10 @@ function loadKasMasukUI() {
                 const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0;
                 if (terjual > 0) { pKotor += (terjual * p.margin); modalB += (terjual * p.modal); } 
             }); 
-            const basis = Math.max(0, pKotor); kasModal += modalB; kasPartner += (basis * 0.40); kasOwner += (basis * 0.60); 
+            const basis = Math.max(0, pKotor); 
+            const pOwner = getRasioHariIni(tgl); 
+            const pPartner = 100 - pOwner;
+            kasModal += modalB; kasPartner += (basis * (pPartner / 100)); kasOwner += (basis * (pOwner / 100)); 
         }); 
         dbLogKas.forEach(l => { const n = l.tipe === 'masuk' ? l.nominal : -l.nominal; if (l.jenis === 'Modal Belanja') kasModal += n; else if (l.jenis === 'Hak Partner') kasPartner += n; else if (l.jenis === 'Hak Owner') kasOwner += n; }); 
         document.getElementById('sbKasModal').innerText = formatRupiah(kasModal); document.getElementById('sbKasPartner').innerText = formatRupiah(kasPartner); document.getElementById('sbKasOwner').innerText = formatRupiah(kasOwner); renderMutasiTabKas(activeKasTab); 
@@ -492,21 +515,24 @@ function loadKasMasukUI() {
     
     function gantiTabKas(jenis, el) { activeKasTab = jenis; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(el) el.classList.add('active'); renderMutasiTabKas(jenis); }
     
+   // 4. TABEL MUTASI KAS
     function renderMutasiTabKas(jenis) { 
         document.getElementById('txtNamaTabKas').innerText = `Dompet ${jenis}`; const tbody = document.getElementById('tbodyMutasiKas'); tbody.innerHTML = ''; let mutasiList = []; const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
         validDates.forEach(tgl => { 
             let pKotor = 0, modalB = 0; 
             dbStok[tgl].forEach(p => { const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0; if (terjual > 0) { pKotor += (terjual * p.margin); modalB += (terjual * p.modal); } }); 
             const pB = Math.max(0, pKotor); 
+            const pOwner = getRasioHariIni(tgl);
+            const pPartner = 100 - pOwner;
+            
             if (jenis === 'Modal Belanja' && modalB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Modal Terkumpul', nominal: modalB, auto: true }); 
-            else if (jenis === 'Hak Partner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Hak Partner (40%)', nominal: pB * 0.40, auto: true }); 
-            else if (jenis === 'Hak Owner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Hak Anda (60%)', nominal: pB * 0.60, auto: true }); 
+            else if (jenis === 'Hak Partner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: `Masuk: Hak Partner (${pPartner}%)`, nominal: pB * (pPartner / 100), auto: true }); 
+            else if (jenis === 'Hak Owner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: `Masuk: Hak Anda (${pOwner}%)`, nominal: pB * (pOwner / 100), auto: true }); 
         }); 
         dbLogKas.forEach(l => { if (l.jenis === jenis) mutasiList.push({ ...l, auto: false }); }); mutasiList.sort((a, b) => a.tgl.localeCompare(b.tgl)); let saldo = 0; 
         mutasiList.forEach(m => { saldo += (m.tipe === 'masuk' ? m.nominal : -m.nominal); const tr = document.createElement('tr'); tr.innerHTML = `<td>${m.tgl}</td><td><span style="color:${m.tipe==='masuk'?'#16a34a':'#dc2626'}; font-weight:800; font-size:0.65rem;">${m.tipe==='masuk'?'🟢 IN':'🔴 OUT'}</span></td><td style="font-weight:600;">${m.ket}</td><td style="font-weight:800; text-align:right;">${formatRupiah(m.nominal)}</td><td style="font-weight:800; color:#2563eb; text-align:right;">${formatRupiah(saldo)}</td><td style="text-align:center;">${!m.auto ? `<button onclick="hapusMutasiKas('${m.id}')" class="btn btn-danger" style="padding:4px; font-size:0.6rem;">Del</button>` : `<small style="font-weight:bold; color:#78716c;">Auto</small>`}</td>`; tbody.appendChild(tr); }); 
         document.getElementById('txtTotalTabKas').innerText = formatRupiah(saldo); 
     }
-    
     function hapusMutasiKas(docId) { if(db && confirm("Hapus kas ini?")) db.collection('logKas').doc(docId).delete(); }
 
     // --- TAMBAHKAN 3 BARIS INI DI SINI ---
@@ -688,13 +714,16 @@ function loadKasMasukUI() {
             `;
         });
     }
-    function generatePDFHarian() { 
+ function generatePDFHarian() { 
         if (typeof html2pdf === 'undefined') return; const tgl = document.getElementById('tglOps').value; const isOwner = currentUser && currentUser.role === 'owner'; document.getElementById('pdfHrTitleProfit').style.display = isOwner ? 'block' : 'none'; document.getElementById('pdfHrBoxProfit').style.display = isOwner ? 'block' : 'none'; const pdfTHead = document.getElementById('pdfTHeadHarianBarang'); pdfTHead.innerHTML = `<tr><th>Produk</th><th style="text-align:center;">Laku</th><th style="text-align:right;">Omset</th>${isOwner ? '<th style="text-align:right;">Profit</th>' : ''}</tr>`; const kas = dbKasMasuk[tgl] || { cash: 0, qris: 0 }; const totalMasuk = (kas.cash||0)+(kas.qris||0); document.getElementById('pdfHariTgl').innerText = `Tanggal: ${tgl}`; document.getElementById('pdfHrCash').innerText = formatRupiah(kas.cash); document.getElementById('pdfHrQris').innerText = formatRupiah(kas.qris); document.getElementById('pdfHrTotalMasuk').innerText = formatRupiah(totalMasuk); let profitKotor = 0, uangModal = 0; const pdfTbody = document.getElementById('pdfTbodyHarianBarang'); pdfTbody.innerHTML = ''; 
         (dbStok[tgl] || []).forEach(p => { 
             const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0; 
             if (terjual > 0) { const o = terjual * p.jual; const pr = terjual * p.margin; profitKotor += pr; uangModal += (terjual * p.modal); const txtVarian = p.varian ? ` (${p.varian})` : ''; pdfTbody.innerHTML += `<tr><td><strong>${p.nama}</strong><small style="color:#78716c;">${txtVarian}</small><br><small style="color:#78716c;">${p.kemasan||''}</small></td><td style="text-align:center;">${terjual}</td><td style="text-align:right;">${formatRupiah(o)}</td>${isOwner ? `<td style="text-align:right;">${formatRupiah(pr)}</td>` : ''}</tr>`; } 
         }); 
-        const basis = Math.max(0, profitKotor); document.getElementById('pdfHrModalBelanja').innerText = formatRupiah(uangModal); document.getElementById('pdfHrBersih').innerText = formatRupiah(profitKotor); document.getElementById('pdfHrPartner').innerText = formatRupiah(basis * 0.40); document.getElementById('pdfHrOwner').innerText = formatRupiah(basis * 0.60); const element = document.getElementById('pdfAreaHarian'); element.style.display = 'block'; html2pdf().set({ margin: 5, filename: `Kasir_Harian_${tgl}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { element.style.display = 'none'; }); 
+        const basis = Math.max(0, profitKotor);
+        const pOwner = getRasioHariIni(tgl);
+        const pPartner = 100 - pOwner;
+        document.getElementById('pdfHrModalBelanja').innerText = formatRupiah(uangModal); document.getElementById('pdfHrBersih').innerText = formatRupiah(profitKotor); document.getElementById('pdfHrPartner').innerText = formatRupiah(basis * (pPartner/100)); document.getElementById('pdfHrOwner').innerText = formatRupiah(basis * (pOwner/100)); const element = document.getElementById('pdfAreaHarian'); element.style.display = 'block'; html2pdf().set({ margin: 5, filename: `Kasir_Harian_${tgl}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(element).save().then(() => { element.style.display = 'none'; }); 
     }
     
     function downloadTemplatePagi() { const tgl = document.getElementById('tglOps').value; let csv = 'Nama Dasar;Kemasan;Varian;Stok Awal;Tambah;Kurang;Stok Sisa\n'; (dbStok[tgl] || masterProduk).forEach(p => { csv += `${p.nama};${p.kemasan||''};${p.varian||''};${p.awal || 0};${p.tambah || 0};${p.kurang || 0};${p.sisa || ""}\n`; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Stok_Harian_${tgl}.csv`; link.click(); }
