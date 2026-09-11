@@ -303,7 +303,7 @@
             </div>
         </div>
                 
-        <!-- 2. VIEW DASHBOARD -->
+       <!-- 2. VIEW DASHBOARD -->
         <div id="viewDashboard" style="display:none; margin-bottom: 40px;">
             <div class="card" style="border-top: 4px solid #f59e0b;">
                 <h2 style="color: #b45309; margin-bottom: 12px;">📈 Dashboard Analisa (7 Hari)</h2>
@@ -322,6 +322,32 @@
                     <h4 style="font-size:0.85rem; color:#44403c; margin-bottom:10px; text-align:center; font-weight:800;">TREN OMSET & PROFIT BERSIH</h4>
                     <div class="chart-container"><canvas id="chartTren"></canvas></div>
                 </div>
+
+                <!-- AWAL TAMBAHAN: TABEL TOP 10 PRODUK -->
+                <hr style="margin: 20px 0; border: none; border-top: 2px dashed var(--border-color);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="font-size:0.9rem; font-weight:800; color:#292524;">🏆 Top 10 Produk Terlaris</h3>
+                    <select id="filterTop10" onchange="renderTop10Produk()" style="width:auto; padding:6px 10px; font-size:0.75rem; border-radius:8px; font-weight:700; border:2px solid #d6d3d1;">
+                        <option value="7">7 Hari Terakhir</option>
+                        <option value="30">30 Hari Terakhir</option>
+                        <option value="all">Semua Waktu</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">No</th>
+                                <th style="text-align:left;">Produk (Varian)</th>
+                                <th>Terjual</th>
+                                <th>Total Omset</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTop10Produk"></tbody>
+                    </table>
+                </div>
+                <!-- AKHIR TAMBAHAN: TABEL TOP 10 PRODUK -->
+
             </div>
         </div>
 
