@@ -467,10 +467,11 @@
                 </div>
             </div>
 
-          <div class="card" id="cardAlokasiHarian" style="margin-bottom: 40px; border-top: 4px solid #10b981;">
+         <div class="card" id="cardAlokasiHarian" style="margin-bottom: 40px; border-top: 4px solid #10b981;">
                 <h2 style="color:#047857;">📊 Alokasi Keuangan & Bagi Hasil</h2>
                 <div class="grid-mobile">
                     <div class="summary-box" style="background:#f0fdf4; border-color:#86efac;">
+                        
                         <div class="summary-item" style="color:#b45309; font-weight:700; font-size:0.9rem;">
                             <span>📦 Uang Modal Belanja (Restock):</span><span id="allocModalBelanja">Rp 0</span>
                         </div>
@@ -493,12 +494,15 @@
                         <div class="summary-item bold" style="color:#0369a1; border-top:1px dashed #4ade80; padding-top:8px; font-size:0.95rem;">
                             <span>🤝 Hak Partner (<span id="txtLabelRasioPartner">40</span>%):</span><span id="allocPartner">Rp 0</span>
                         </div>
+                        
                         <div class="summary-item bold" style="color:#b45309; font-size:0.95rem; margin-top:4px;">
                             <span>👑 Hak Anda (<span id="txtLabelRasioOwner">60</span>%):</span><span id="allocOwner">Rp 0</span>
-                      </div> <!-- Penutup kotak hijau -->
+                        </div> <!-- Penutup baris Hak Anda -->
+
+                    </div> <!-- Penutup kotak hijau (summary-box) -->
                 </div> <!-- Penutup grid-mobile -->
             </div> <!-- Penutup card Alokasi -->
-        </div> <!-- ❗ TAMBAHKAN KODE INI: Penutup viewHarian yang hilang -->
+        </div> <!-- Penutup keseluruhan viewHarian -->
 
         <!-- 5. VIEW MUTASI KAS -->
         <div id="viewMutasiKas" style="display:none; margin-bottom: 40px;">
