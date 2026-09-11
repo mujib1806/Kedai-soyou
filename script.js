@@ -523,91 +523,129 @@
     function hapusProduk(i) { if(isDataLocked(document.getElementById('tglOps').value)) return; if(confirm("Sembunyikan produk ini hari ini?")) { const tgl = document.getElementById('tglOps').value; dbStok[tgl].splice(i,1); if(db) db.collection('stokHarian').doc(tgl).set({items: dbStok[tgl]}); renderTabelMatriks(); updateKalkulasi(); } }
     
     function renderDashboardGrafik() {
-        const allDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); const last7Dates = allDates.slice(-7); if(last7Dates.length === 0) return;
-        let totalOmset = 0, totalProfit = 0; let labelsTren = [], dataOmset = [], dataProfitLine = [];
-        last7Dates.forEach(tgl => {
-            labelsTren.push(tgl.slice(-2) + '/' + tgl.slice(5,7)); let harianOmset = 0, harianProfitKotor = 0; let items = dbStok[tgl] || [];
-            items.forEach(p => { const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0; if(terjual > 0) { harianOmset += (terjual * p.jual); harianProfitKotor += (terjual * p.margin); } });
-            totalOmset += harianOmset; totalProfit += harianProfitKotor; dataOmset.push(harianOmset); dataProfitLine.push(harianProfitKotor);
+        const filterVal = document.getElementById('filterGlobalDashboard').value;
+        const allDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
+        
+        let targetDates = allDates;
+        if (filterVal !== 'all') {
+            targetDates = allDates.slice(-parseInt(filterVal));
+        }
+        
+        let totalOmset = 0, totalProfit = 0; 
+        let labelsTren = [], dataOmset = [], dataProfitLine = [];
+        
+        targetDates.forEach(tgl => {
+            labelsTren.push(tgl.slice(-2) + '/' + tgl.slice(5,7)); 
+            let harianOmset = 0, harianProfitKotor = 0; 
+            let items = dbStok[tgl] || [];
+            items.forEach(p => { 
+                const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0; 
+                if(terjual > 0) { harianOmset += (terjual * p.jual); harianProfitKotor += (terjual * p.margin); } 
+            });
+            totalOmset += harianOmset; totalProfit += harianProfitKotor; 
+            dataOmset.push(harianOmset); dataProfitLine.push(harianProfitKotor);
         });
-        document.getElementById('dashTotalOmset').innerText = formatRupiah(totalOmset); document.getElementById('dashTotalProfit').innerText = formatRupiah(totalProfit);
-        Chart.register(ChartDataLabels); const formatSingkatan = function(value) { if (value === 0 || !value) return ''; if (value >= 1000000) { let j = value / 1000000; return (j % 1 === 0 ? j : j.toFixed(1).replace('.', ',')) + ' Jt'; } else if (value >= 1000) { let rb = value / 1000; return (rb % 1 === 0 ? rb : rb.toFixed(1).replace('.', ',')) + ' Rb'; } return value.toString(); };
-        if(chartTren) chartTren.destroy(); const ctxTren = document.getElementById('chartTren').getContext('2d');
-      // ... (kode chartTren sebelumnya) ...
-        chartTren = new Chart(ctxTren, { type: 'bar', data: { labels: labelsTren, datasets: [ { type: 'line', label: 'Profit Bersih', data: dataProfitLine, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 2.5, tension: 0.3, pointRadius: 4, datalabels: { align: 'top', anchor: 'end', color: '#15803d', font: { weight: 'bold', size: 10 }, formatter: formatSingkatan } }, { type: 'bar', label: 'Omset Harian', data: dataOmset, backgroundColor: '#f59e0b', borderRadius: 4, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 9 }, formatter: formatSingkatan } } ] }, options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 20 } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } }, datalabels: { display: true } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, display: false } } } });
         
-        // Panggil fungsi Top 10 di sini (DI DALAM fungsi renderDashboardGrafik)
-        renderTop10Produk(); 
+        document.getElementById('dashTotalOmset').innerText = formatRupiah(totalOmset); 
+        document.getElementById('dashTotalProfit').innerText = formatRupiah(totalProfit);
         
-    } // <--- PASTIKAN HANYA ADA SATU KURUNG TUTUP DI SINI
-
-// --- FUNGSI TOP 10 PRODUK ---
-function renderTop10Produk() {
-    const filterVal = document.getElementById('filterTop10').value;
-    const tbody = document.getElementById('tbodyTop10Produk');
-    if (!tbody) return; // Pengaman jika elemen belum dirender
-    
-    tbody.innerHTML = '';
-    
-    // 1. Kumpulkan tanggal dan filter sesuai rentang waktu yang dipilih
-    const allDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
-    let targetDates = allDates;
-    
-    if (filterVal !== 'all') {
-        const days = parseInt(filterVal);
-        targetDates = allDates.slice(-days);
+        Chart.register(ChartDataLabels); 
+        const formatSingkatan = function(value) { 
+            if (value === 0 || !value) return ''; 
+            if (value >= 1000000) { let j = value / 1000000; return (j % 1 === 0 ? j : j.toFixed(1).replace('.', ',')) + ' Jt'; } 
+            else if (value >= 1000) { let rb = value / 1000; return (rb % 1 === 0 ? rb : rb.toFixed(1).replace('.', ',')) + ' Rb'; } 
+            return value.toString(); 
+        };
+        
+        if(chartTren) chartTren.destroy(); 
+        const ctxTren = document.getElementById('chartTren').getContext('2d');
+        chartTren = new Chart(ctxTren, { 
+            type: 'bar', 
+            data: { 
+                labels: labelsTren, 
+                datasets: [ 
+                    { type: 'line', label: 'Profit Bersih', data: dataProfitLine, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 2.5, tension: 0.3, pointRadius: 4, datalabels: { align: 'top', anchor: 'end', color: '#15803d', font: { weight: 'bold', size: 10 }, formatter: formatSingkatan } }, 
+                    { type: 'bar', label: 'Omset Harian', data: dataOmset, backgroundColor: '#f59e0b', borderRadius: 4, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 9 }, formatter: formatSingkatan } } 
+                ] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 20 } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } }, datalabels: { display: true } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, display: false } } } 
+        });
+        
+        // Teruskan data tanggal ke fungsi Top 10 agar sinkron
+        renderTop10Produk(targetDates); 
     }
-    
-    // 2. Kumpulkan dan hitung total penjualan tiap produk
-    let rekapProduk = {};
-    targetDates.forEach(tgl => {
-        const items = dbStok[tgl] || [];
-        items.forEach(p => {
-            const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0;
-            if (terjual > 0) {
-                const key = `${p.nama}_${p.kemasan || ''}_${p.varian || ''}`;
-                if (!rekapProduk[key]) {
-                    rekapProduk[key] = { nama: p.nama, kemasan: p.kemasan, varian: p.varian, totalTerjual: 0, totalOmset: 0 };
+
+    // --- FUNGSI TOP 10 PRODUK ---
+    function renderTop10Produk(passedDates) {
+        const tbody = document.getElementById('tbodyTop10Produk');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        // Gunakan tanggal dari Global Filter
+        let targetDates = passedDates;
+        if (!targetDates) {
+            const filterVal = document.getElementById('filterGlobalDashboard').value;
+            const allDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort();
+            targetDates = filterVal === 'all' ? allDates : allDates.slice(-parseInt(filterVal));
+        }
+        
+        // Ambil kata kunci pengecualian (pisahkan dengan koma)
+        const teksPengecualian = document.getElementById('inputPengecualianTop10').value.toLowerCase();
+        const kataPengecualian = teksPengecualian.split(',').map(k => k.trim()).filter(k => k !== '');
+        
+        let rekapProduk = {};
+        targetDates.forEach(tgl => {
+            const items = dbStok[tgl] || [];
+            items.forEach(p => {
+                const terjual = (p.terjual !== "" && p.terjual !== null && p.terjual !== undefined) ? parseFloat(p.terjual) : 0;
+                if (terjual > 0) {
+                    const namaLengkap = `${p.nama} ${p.kemasan || ''} ${p.varian || ''}`.toLowerCase();
+                    
+                    // Cek apakah ada kata yang cocok dengan filter pengecualian
+                    let isDikecualikan = false;
+                    if (kataPengecualian.length > 0) {
+                        isDikecualikan = kataPengecualian.some(kata => namaLengkap.includes(kata));
+                    }
+                    
+                    if (!isDikecualikan) {
+                        const key = `${p.nama}_${p.kemasan || ''}_${p.varian || ''}`;
+                        if (!rekapProduk[key]) {
+                            rekapProduk[key] = { nama: p.nama, kemasan: p.kemasan, varian: p.varian, totalTerjual: 0, totalOmset: 0 };
+                        }
+                        rekapProduk[key].totalTerjual += terjual;
+                        rekapProduk[key].totalOmset += (terjual * p.jual);
+                    }
                 }
-                rekapProduk[key].totalTerjual += terjual;
-                rekapProduk[key].totalOmset += (terjual * p.jual);
-            }
+            });
         });
-    });
-    
-    // 3. Ubah ke array dan urutkan dari yang Terjual Paling Banyak
-    let arrProduk = Object.values(rekapProduk);
-    arrProduk.sort((a, b) => b.totalTerjual - a.totalTerjual);
-    
-    // 4. Ambil maksimal 10 teratas
-    let top10 = arrProduk.slice(0, 10);
-    
-    // 5. Cetak ke Tabel HTML
-    if (top10.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#78716c;">Belum ada data penjualan pada rentang waktu ini.</td></tr>`;
-        return;
-    }
-    
-    top10.forEach((p, idx) => {
-        // Beri emoji medali untuk peringkat 1, 2, 3
-        let medali = (idx === 0) ? '🥇' : (idx === 1) ? '🥈' : (idx === 2) ? '🥉' : `<b>${idx + 1}</b>`;
-        let varianTeks = p.varian ? ` - ${p.varian}` : '';
-        let kemasanTeks = p.kemasan ? ` (${p.kemasan})` : '';
         
-        tbody.innerHTML += `
-            <tr>
-                <td style="text-align:center; font-size:1.1rem; background:#fafaf9;">${medali}</td>
-                <td>
-                    <strong style="color:#1d4ed8;">${p.nama}</strong><strong style="color:#b45309;">${varianTeks}</strong>
-                    <br><small style="color:#78716c;">${kemasanTeks}</small>
-                </td>
-                <td style="text-align:center; font-weight:900; font-size:0.95rem; color:#166534; background:#f0fdf4;">${p.totalTerjual}</td>
-                <td style="text-align:right; font-weight:700;">${formatRupiah(p.totalOmset)}</td>
-            </tr>
-        `;
-    });
-}
-
+        let arrProduk = Object.values(rekapProduk);
+        arrProduk.sort((a, b) => b.totalTerjual - a.totalTerjual);
+        let top10 = arrProduk.slice(0, 10);
+        
+        if (top10.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#78716c;">Belum ada data penjualan pada rentang waktu ini.</td></tr>`;
+            return;
+        }
+        
+        top10.forEach((p, idx) => {
+            let medali = (idx === 0) ? '🥇' : (idx === 1) ? '🥈' : (idx === 2) ? '🥉' : `<b>${idx + 1}</b>`;
+            let varianTeks = p.varian ? ` - ${p.varian}` : '';
+            let kemasanTeks = p.kemasan ? ` (${p.kemasan})` : '';
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-size:1.1rem; background:#fafaf9;">${medali}</td>
+                    <td>
+                        <strong style="color:#1d4ed8;">${p.nama}</strong><strong style="color:#b45309;">${varianTeks}</strong>
+                        <br><small style="color:#78716c;">${kemasanTeks}</small>
+                    </td>
+                    <td style="text-align:center; font-weight:900; font-size:0.95rem; color:#166534; background:#f0fdf4;">${p.totalTerjual}</td>
+                    <td style="text-align:right; font-weight:700;">${formatRupiah(p.totalOmset)}</td>
+                </tr>
+            `;
+        });
+    }
     function generatePDFHarian() { 
         if (typeof html2pdf === 'undefined') return; const tgl = document.getElementById('tglOps').value; const isOwner = currentUser && currentUser.role === 'owner'; document.getElementById('pdfHrTitleProfit').style.display = isOwner ? 'block' : 'none'; document.getElementById('pdfHrBoxProfit').style.display = isOwner ? 'block' : 'none'; const pdfTHead = document.getElementById('pdfTHeadHarianBarang'); pdfTHead.innerHTML = `<tr><th>Produk</th><th style="text-align:center;">Laku</th><th style="text-align:right;">Omset</th>${isOwner ? '<th style="text-align:right;">Profit</th>' : ''}</tr>`; const kas = dbKasMasuk[tgl] || { cash: 0, qris: 0 }; const totalMasuk = (kas.cash||0)+(kas.qris||0); document.getElementById('pdfHariTgl').innerText = `Tanggal: ${tgl}`; document.getElementById('pdfHrCash').innerText = formatRupiah(kas.cash); document.getElementById('pdfHrQris').innerText = formatRupiah(kas.qris); document.getElementById('pdfHrTotalMasuk').innerText = formatRupiah(totalMasuk); let profitKotor = 0, uangModal = 0; const pdfTbody = document.getElementById('pdfTbodyHarianBarang'); pdfTbody.innerHTML = ''; 
         (dbStok[tgl] || []).forEach(p => { 
