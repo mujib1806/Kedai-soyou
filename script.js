@@ -466,17 +466,56 @@
     }
     
     function hapusMutasiKas(docId) { if(db && confirm("Hapus kas ini?")) db.collection('logKas').doc(docId).delete(); }
-    
+
+    // --- TAMBAHKAN 3 BARIS INI DI SINI ---
+    let sortKolomMaster = 'nama';
+    let sortAscMaster = true;
+    let searchMasterText = '';
+
     function resetFormMasterProduk() { document.getElementById('editIndexProduk').value="-1"; document.getElementById('inputNamaProduk').value=""; document.getElementById('inputKemasanProduk').value=""; document.getElementById('inputVarianProduk').value=""; document.getElementById('inputModalProduk').value=""; document.getElementById('inputJualProduk').value=""; document.getElementById('inputMarginProduk').value=""; document.getElementById('inputMinStokProduk').value="5"; document.getElementById('btnSimpanProduk').innerText="Simpan Produk"; }
     function hitungMarginForm() { document.getElementById('inputMarginProduk').value=Math.max(0,(parseFloat(document.getElementById('inputJualProduk').value)||0)-(parseFloat(document.getElementById('inputModalProduk').value)||0)); }
     function simpanProdukBaru(e) { e.preventDefault(); const p = { nama: document.getElementById('inputNamaProduk').value.trim(), kemasan: document.getElementById('inputKemasanProduk').value.trim(), varian: document.getElementById('inputVarianProduk').value.trim(), modal: parseFloat(document.getElementById('inputModalProduk').value)||0, jual: parseFloat(document.getElementById('inputJualProduk').value)||0, margin: 0, minStok: parseFloat(document.getElementById('inputMinStokProduk').value)||0 }; p.margin = p.jual - p.modal; const idx = parseInt(document.getElementById('editIndexProduk').value); if(idx >= 0) masterProduk[idx] = p; else masterProduk.push(p); if(db) { db.collection('appData').doc('masterProduk').set({list:masterProduk}).then(() => { resetFormMasterProduk(); renderTabelMasterProduk(); showToast("✅ Produk Berhasil Disimpan!"); }); } else { resetFormMasterProduk(); renderTabelMasterProduk(); showToast("✅ Disimpan Lokal"); } }
     
     function renderTabelMasterProduk() { 
-        const t = document.getElementById('tbodyMasterProduk'); let dataTampil = masterProduk.map((p, index) => ({ ...p, originalIndex: index }));
-        if (searchMasterText !== '') { dataTampil = dataTampil.filter(p => p.nama.toLowerCase().includes(searchMasterText) || (p.kemasan && p.kemasan.toLowerCase().includes(searchMasterText)) || (p.varian && p.varian.toLowerCase().includes(searchMasterText)) ); }
-        dataTampil.sort((a, b) => { let valA = a[sortKolomMaster] || ''; let valB = b[sortKolomMaster] || ''; if (typeof valA === 'string') valA = valA.toLowerCase(); if (typeof valB === 'string') valB = valB.toLowerCase(); if (valA < valB) return sortAscMaster ? -1 : 1; if (valA > valB) return sortAscMaster ? 1 : -1; return 0; });
-        ['nama', 'kemasan', 'varian', 'modal', 'jual', 'margin', 'minStok'].forEach(h => { const el = document.getElementById(`sort_${h}`); if(el) { if(sortKolomMaster === h) el.innerText = sortAscMaster ? ' 🔼' : ' 🔽'; else el.innerText = ''; } });
-        let htmlRows = ''; dataTampil.forEach((p, i) => { let minS = p.minStok !== undefined ? p.minStok : 5; htmlRows += `<tr><td style="text-align:center;">${i+1}</td><td style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}</td><td style="color:#57534e; font-size:0.75rem;">${p.kemasan || '-'}</td><td style="color:#b45309; font-weight:bold; font-size:0.75rem;">${p.varian || '-'}</td><td>${formatRupiah(p.modal)}</td><td>${formatRupiah(p.jual)}</td><td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td><td style="color:#b45309; font-weight:bold; text-align:center;">${minS}</td><td style="display:flex; gap:6px; padding-top:10px;"><button onclick="editProdukMaster(${p.originalIndex})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button><button onclick="hapusProdukMaster(${p.originalIndex})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button></td></tr>`; }); t.innerHTML = htmlRows; 
+        const t = document.getElementById('tbodyMasterProduk'); 
+        let dataTampil = masterProduk.map((p, index) => ({ ...p, originalIndex: index }));
+        
+        // 1. PERBAIKAN: Tambahkan pengaman (p.nama || '') agar tidak error jika data nama kosong
+        if (typeof searchMasterText !== 'undefined' && searchMasterText !== '') { 
+            dataTampil = dataTampil.filter(p => 
+                (p.nama || '').toLowerCase().includes(searchMasterText) || 
+                (p.kemasan && p.kemasan.toLowerCase().includes(searchMasterText)) || 
+                (p.varian && p.varian.toLowerCase().includes(searchMasterText)) 
+            ); 
+        }
+        
+        // 2. PERBAIKAN: Memastikan sortKolomMaster tersedia sebelum melakukan sorting
+        if (typeof sortKolomMaster !== 'undefined' && sortKolomMaster !== '') {
+            dataTampil.sort((a, b) => { 
+                let valA = a[sortKolomMaster] || ''; 
+                let valB = b[sortKolomMaster] || ''; 
+                if (typeof valA === 'string') valA = valA.toLowerCase(); 
+                if (typeof valB === 'string') valB = valB.toLowerCase(); 
+                if (valA < valB) return sortAscMaster ? -1 : 1; 
+                if (valA > valB) return sortAscMaster ? 1 : -1; 
+                return 0; 
+            });
+            
+            ['nama', 'kemasan', 'varian', 'modal', 'jual', 'margin', 'minStok'].forEach(h => { 
+                const el = document.getElementById(`sort_${h}`); 
+                if(el) { 
+                    if(sortKolomMaster === h) el.innerText = sortAscMaster ? ' 🔼' : ' 🔽'; 
+                    else el.innerText = ''; 
+                } 
+            });
+        }
+        
+        let htmlRows = ''; 
+        dataTampil.forEach((p, i) => { 
+            let minS = p.minStok !== undefined ? p.minStok : 5; 
+            htmlRows += `<tr><td style="text-align:center;">${i+1}</td><td style="font-weight:bold; color:#292524; font-size:0.8rem;">${p.nama}</td><td style="color:#57534e; font-size:0.75rem;">${p.kemasan || '-'}</td><td style="color:#b45309; font-weight:bold; font-size:0.75rem;">${p.varian || '-'}</td><td>${formatRupiah(p.modal)}</td><td>${formatRupiah(p.jual)}</td><td style="color:#16a34a; font-weight:bold;">${formatRupiah(p.margin)}</td><td style="color:#b45309; font-weight:bold; text-align:center;">${minS}</td><td style="display:flex; gap:6px; padding-top:10px;"><button onclick="editProdukMaster(${p.originalIndex})" class="btn btn-warning" style="padding:4px 8px; font-size:0.7rem; margin:0;">✏️ Edit</button><button onclick="hapusProdukMaster(${p.originalIndex})" class="btn btn-danger" style="padding:4px 8px; font-size:0.7rem; margin:0;">🗑️ Hapus</button></td></tr>`; 
+        }); 
+        t.innerHTML = htmlRows; 
     }
     
     function editProdukMaster(i) { const p = masterProduk[i]; document.getElementById('editIndexProduk').value = i; document.getElementById('inputNamaProduk').value = p.nama; document.getElementById('inputKemasanProduk').value = p.kemasan || ''; document.getElementById('inputVarianProduk').value = p.varian || ''; document.getElementById('inputModalProduk').value = p.modal; document.getElementById('inputJualProduk').value = p.jual; document.getElementById('inputMinStokProduk').value = p.minStok !== undefined ? p.minStok : 5; hitungMarginForm(); document.getElementById('btnSimpanProduk').innerText = "Update Produk"; window.scrollTo(0, 0); }
