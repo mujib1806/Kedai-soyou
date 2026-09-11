@@ -533,11 +533,14 @@
         document.getElementById('dashTotalOmset').innerText = formatRupiah(totalOmset); document.getElementById('dashTotalProfit').innerText = formatRupiah(totalProfit);
         Chart.register(ChartDataLabels); const formatSingkatan = function(value) { if (value === 0 || !value) return ''; if (value >= 1000000) { let j = value / 1000000; return (j % 1 === 0 ? j : j.toFixed(1).replace('.', ',')) + ' Jt'; } else if (value >= 1000) { let rb = value / 1000; return (rb % 1 === 0 ? rb : rb.toFixed(1).replace('.', ',')) + ' Rb'; } return value.toString(); };
         if(chartTren) chartTren.destroy(); const ctxTren = document.getElementById('chartTren').getContext('2d');
+      // ... (kode chartTren sebelumnya) ...
         chartTren = new Chart(ctxTren, { type: 'bar', data: { labels: labelsTren, datasets: [ { type: 'line', label: 'Profit Bersih', data: dataProfitLine, borderColor: '#16a34a', backgroundColor: '#16a34a', borderWidth: 2.5, tension: 0.3, pointRadius: 4, datalabels: { align: 'top', anchor: 'end', color: '#15803d', font: { weight: 'bold', size: 10 }, formatter: formatSingkatan } }, { type: 'bar', label: 'Omset Harian', data: dataOmset, backgroundColor: '#f59e0b', borderRadius: 4, datalabels: { color: '#ffffff', font: { weight: 'bold', size: 9 }, formatter: formatSingkatan } } ] }, options: { responsive: true, maintainAspectRatio: false, layout: { padding: { top: 20 } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 10} } }, datalabels: { display: true } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, display: false } } } });
-    }
-// 👇 TAMBAHKAN BARIS INI:
+        
+        // Panggil fungsi Top 10 di sini (DI DALAM fungsi renderDashboardGrafik)
         renderTop10Produk(); 
-    } // <- Ini adalah kurung kurawal penutup fungsi renderDashboardGrafik
+        
+    } // <--- PASTIKAN HANYA ADA SATU KURUNG TUTUP DI SINI
+
 // --- FUNGSI TOP 10 PRODUK ---
 function renderTop10Produk() {
     const filterVal = document.getElementById('filterTop10').value;
