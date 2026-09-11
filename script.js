@@ -246,10 +246,22 @@
             if(document.getElementById('viewOrderVendor').style.display === 'block') { if (document.activeElement && document.activeElement.tagName === 'INPUT') return; renderTabelOrderVendor(); }
         });
         db.collection('stokHarian').onSnapshot(snapshot => { 
-            snapshot.forEach(doc => { dbStok[doc.id] = doc.data().items; }); 
-            const tgl = document.getElementById('tglOps').value; 
-            if (!document.activeElement || !document.activeElement.classList.contains('input-stok')) { syncStokDenganMaster(tgl); cekDanTarikDataKemarin(tgl); renderTabelMatriks(); updateKalkulasi(); } 
-        });
+    const tgl = document.getElementById('tglOps').value;
+    const isTyping = document.activeElement && document.activeElement.classList.contains('input-stok');
+
+    snapshot.forEach(doc => { 
+        // PENTING: Jangan timpa memori lokal untuk hari ini jika kasir sedang mengetik
+        if (isTyping && doc.id === tgl) return; 
+        dbStok[doc.id] = doc.data().items; 
+    }); 
+
+    if (!isTyping) { 
+        syncStokDenganMaster(tgl); 
+        cekDanTarikDataKemarin(tgl); 
+        renderTabelMatriks(); 
+        updateKalkulasi(); 
+    } 
+});
         db.collection('kasMasuk').onSnapshot(snapshot => { 
             snapshot.forEach(doc => { dbKasMasuk[doc.id] = doc.data(); }); 
             if (document.activeElement.id !== 'inCash' && document.activeElement.id !== 'inQris') { loadKasMasukUI(); } updateKalkulasi(); 
@@ -257,14 +269,15 @@
         db.collection('logKas').onSnapshot(snapshot => { dbLogKas = []; snapshot.forEach(doc => { dbLogKas.push({ id: doc.id, ...doc.data() }); }); hitungAkumulasiKasTotal(); });
     }
 
-        // --- PERBAIKAN FINAL BUG SISA KEMARIN ---
+   // --- PERBAIKAN FINAL BUG SISA KEMARIN ---
     function cekDanTarikDataKemarin(tgl) {
         if (isDataLocked(tgl)) return;
         
-        let [y, m, d] = tgl.split('-'); 
-        let dateObj = new Date(y, m - 1, d); 
-        dateObj.setDate(dateObj.getDate() - 1); 
-        let tglKemarin = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        // Cari tanggal terakhir operasional dari database (mengatasi hari libur/toko tutup)
+        const availableDates = Object.keys(dbStok).filter(k => k < tgl).sort();
+        const tglKemarin = availableDates.length > 0 ? availableDates[availableDates.length - 1] : null;
+
+        if (!tglKemarin) return; // Jika belum ada histori hari sebelumnya sama sekali, hentikan
         
         let isKemarinLocked = dbStatusKunci[tglKemarin] === true; 
         let needsUpdateUI = false;
