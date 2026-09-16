@@ -495,7 +495,8 @@ function loadKasMasukUI() {
         else if (selisihSetor === 0) { finalBox.style.background = '#f0fdf4'; finalBox.style.border = '2px solid #86efac'; finalValue.style.color = '#15803d'; finalValue.innerText = formatRupiah(0); finalKet.style.color = '#166534'; finalKet.innerText = "✅ BALANCE PERFECT!"; } 
         else { finalBox.style.background = '#eff6ff'; finalBox.style.border = '2px solid #93c5fd'; finalValue.style.color = '#1d4ed8'; finalValue.innerText = `+ ${formatRupiah(selisihSetor)}`; finalKet.style.color = '#1e3a8a'; finalKet.innerText = "✨ SELISIH LEBIH! Ada surplus uang aktual."; }
     }
- // 3. HITUNG AKUMULASI KAS TOTAL
+
+    // 3. HITUNG AKUMULASI KAS TOTAL
     function hitungAkumulasiKasTotal() { 
         let kasModal = 0, kasPartner = 0, kasOwner = 0; const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
         validDates.forEach(tgl => { 
@@ -510,12 +511,27 @@ function loadKasMasukUI() {
             kasModal += modalB; kasPartner += (basis * (pPartner / 100)); kasOwner += (basis * (pOwner / 100)); 
         }); 
         dbLogKas.forEach(l => { const n = l.tipe === 'masuk' ? l.nominal : -l.nominal; if (l.jenis === 'Modal Belanja') kasModal += n; else if (l.jenis === 'Hak Partner') kasPartner += n; else if (l.jenis === 'Hak Owner') kasOwner += n; }); 
-        document.getElementById('sbKasModal').innerText = formatRupiah(kasModal); document.getElementById('sbKasPartner').innerText = formatRupiah(kasPartner); document.getElementById('sbKasOwner').innerText = formatRupiah(kasOwner); renderMutasiTabKas(activeKasTab); 
+        
+        document.getElementById('sbKasModal').innerText = formatRupiah(kasModal); 
+        document.getElementById('sbKasPartner').innerText = formatRupiah(kasPartner); 
+        document.getElementById('sbKasOwner').innerText = formatRupiah(kasOwner); 
+        
+        // --- DETEKSI TANGGAL & UPDATE JUDUL PERSENTASE YANG LEBIH AMAN ---
+        const elTgl = document.getElementById('tglOps');
+        const tglSekarang = (elTgl && elTgl.value) ? elTgl.value : new Date().toISOString().slice(0, 10);
+        const pOwnerNow = getRasioHariIni(tglSekarang);
+        
+        const elTitlePartner = document.getElementById('titleDompetPartner');
+        const elTitleOwner = document.getElementById('titleDompetOwner');
+        if(elTitlePartner) elTitlePartner.innerHTML = `Dompet Hak Partner <span style="font-size:0.75rem; color:#fff;">(${100 - pOwnerNow}%)</span>`;
+        if(elTitleOwner) elTitleOwner.innerHTML = `Dompet Hak Anda <span style="font-size:0.75rem; color:#fff;">(${pOwnerNow}%)</span>`;
+        
+        renderMutasiTabKas(activeKasTab); 
     }
     
     function gantiTabKas(jenis, el) { activeKasTab = jenis; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(el) el.classList.add('active'); renderMutasiTabKas(jenis); }
     
-   // 4. TABEL MUTASI KAS
+    // 4. TABEL MUTASI KAS
     function renderMutasiTabKas(jenis) { 
         document.getElementById('txtNamaTabKas').innerText = `Dompet ${jenis}`; const tbody = document.getElementById('tbodyMutasiKas'); tbody.innerHTML = ''; let mutasiList = []; const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
         validDates.forEach(tgl => { 
@@ -525,12 +541,36 @@ function loadKasMasukUI() {
             const pOwner = getRasioHariIni(tgl);
             const pPartner = 100 - pOwner;
             
-            if (jenis === 'Modal Belanja' && modalB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Modal Terkumpul', nominal: modalB, auto: true }); 
-            else if (jenis === 'Hak Partner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: `Masuk: Hak Partner (${pPartner}%)`, nominal: pB * (pPartner / 100), auto: true }); 
-            else if (jenis === 'Hak Owner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: `Masuk: Hak Anda (${pOwner}%)`, nominal: pB * (pOwner / 100), auto: true }); 
+            // Tambahkan Timestamp palsu di 00:00:00 agar bisa diurutkan presisi dengan transaksi manual
+            if (jenis === 'Modal Belanja' && modalB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: 'Masuk: Modal Terkumpul', nominal: modalB, auto: true, timestamp: new Date(`${tgl}T00:00:00`).getTime() }); 
+            else if (jenis === 'Hak Partner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: `Masuk: Hak Partner (${pPartner}%)`, nominal: pB * (pPartner / 100), auto: true, timestamp: new Date(`${tgl}T00:00:00`).getTime() }); 
+            else if (jenis === 'Hak Owner' && pB > 0) mutasiList.push({ id: null, tgl, tipe: 'masuk', ket: `Masuk: Hak Anda (${pOwner}%)`, nominal: pB * (pOwner / 100), auto: true, timestamp: new Date(`${tgl}T00:00:00`).getTime() }); 
         }); 
-        dbLogKas.forEach(l => { if (l.jenis === jenis) mutasiList.push({ ...l, auto: false }); }); mutasiList.sort((a, b) => a.tgl.localeCompare(b.tgl)); let saldo = 0; 
-        mutasiList.forEach(m => { saldo += (m.tipe === 'masuk' ? m.nominal : -m.nominal); const tr = document.createElement('tr'); tr.innerHTML = `<td>${m.tgl}</td><td><span style="color:${m.tipe==='masuk'?'#16a34a':'#dc2626'}; font-weight:800; font-size:0.65rem;">${m.tipe==='masuk'?'🟢 IN':'🔴 OUT'}</span></td><td style="font-weight:600;">${m.ket}</td><td style="font-weight:800; text-align:right;">${formatRupiah(m.nominal)}</td><td style="font-weight:800; color:#2563eb; text-align:right;">${formatRupiah(saldo)}</td><td style="text-align:center;">${!m.auto ? `<button onclick="hapusMutasiKas('${m.id}')" class="btn btn-danger" style="padding:4px; font-size:0.6rem;">Del</button>` : `<small style="font-weight:bold; color:#78716c;">Auto</small>`}</td>`; tbody.appendChild(tr); }); 
+        dbLogKas.forEach(l => { if (l.jenis === jenis) mutasiList.push({ ...l, auto: false }); }); 
+        
+        // --- 1. URUTKAN BERDASARKAN TANGGAL & WAKTU (Lama ke Baru) ---
+        mutasiList.sort((a, b) => { 
+            if (a.tgl === b.tgl) return (a.timestamp || 0) - (b.timestamp || 0);
+            return a.tgl.localeCompare(b.tgl); 
+        }); 
+        
+        // --- 2. HITUNG SALDO BERJALAN ---
+        let saldo = 0; 
+        mutasiList.forEach(m => { 
+            saldo += (m.tipe === 'masuk' ? m.nominal : -m.nominal); 
+            m.saldoBerjalan = saldo; 
+        }); 
+        
+        // --- 3. BALIK URUTAN: TERBARU DI ATAS ---
+        mutasiList.reverse(); 
+        
+        // --- 4. CETAK KE TABEL ---
+        mutasiList.forEach(m => { 
+            const tr = document.createElement('tr'); 
+            tr.innerHTML = `<td>${m.tgl}</td><td><span style="color:${m.tipe==='masuk'?'#16a34a':'#dc2626'}; font-weight:800; font-size:0.65rem;">${m.tipe==='masuk'?'🟢 IN':'🔴 OUT'}</span></td><td style="font-weight:600;">${m.ket}</td><td style="font-weight:800; text-align:right;">${formatRupiah(m.nominal)}</td><td style="font-weight:800; color:#2563eb; text-align:right;">${formatRupiah(m.saldoBerjalan)}</td><td style="text-align:center;">${!m.auto ? `<button onclick="hapusMutasiKas('${m.id}')" class="btn btn-danger" style="padding:4px; font-size:0.6rem;">Del</button>` : `<small style="font-weight:bold; color:#78716c;">Auto</small>`}</td>`; 
+            tbody.appendChild(tr); 
+        }); 
+        
         document.getElementById('txtTotalTabKas').innerText = formatRupiah(saldo); 
     }
     function hapusMutasiKas(docId) { if(db && confirm("Hapus kas ini?")) db.collection('logKas').doc(docId).delete(); }
