@@ -496,9 +496,11 @@ function loadKasMasukUI() {
         else { finalBox.style.background = '#eff6ff'; finalBox.style.border = '2px solid #93c5fd'; finalValue.style.color = '#1d4ed8'; finalValue.innerText = `+ ${formatRupiah(selisihSetor)}`; finalKet.style.color = '#1e3a8a'; finalKet.innerText = "✨ SELISIH LEBIH! Ada surplus uang aktual."; }
     }
 
-    // 3. HITUNG AKUMULASI KAS TOTAL
+   // 3. HITUNG AKUMULASI KAS TOTAL
     function hitungAkumulasiKasTotal() { 
-        let kasModal = 0, kasPartner = 0, kasOwner = 0; const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
+        let kasModal = 0, kasPartner = 0, kasOwner = 0; 
+        const validDates = Object.keys(dbStok).filter(tgl => tgl.match(/^\d{4}-\d{2}-\d{2}$/)).sort(); 
+        
         validDates.forEach(tgl => { 
             let pKotor = 0, modalB = 0; 
             dbStok[tgl].forEach(p => { 
@@ -510,21 +512,33 @@ function loadKasMasukUI() {
             const pPartner = 100 - pOwner;
             kasModal += modalB; kasPartner += (basis * (pPartner / 100)); kasOwner += (basis * (pOwner / 100)); 
         }); 
-        dbLogKas.forEach(l => { const n = l.tipe === 'masuk' ? l.nominal : -l.nominal; if (l.jenis === 'Modal Belanja') kasModal += n; else if (l.jenis === 'Hak Partner') kasPartner += n; else if (l.jenis === 'Hak Owner') kasOwner += n; }); 
         
-        document.getElementById('sbKasModal').innerText = formatRupiah(kasModal); 
-        document.getElementById('sbKasPartner').innerText = formatRupiah(kasPartner); 
-        document.getElementById('sbKasOwner').innerText = formatRupiah(kasOwner); 
+        dbLogKas.forEach(l => { 
+            const n = l.tipe === 'masuk' ? l.nominal : -l.nominal; 
+            if (l.jenis === 'Modal Belanja') kasModal += n; 
+            else if (l.jenis === 'Hak Partner') kasPartner += n; 
+            else if (l.jenis === 'Hak Owner') kasOwner += n; 
+        }); 
         
-        // --- DETEKSI TANGGAL & UPDATE JUDUL PERSENTASE YANG LEBIH AMAN ---
+        // --- PERBAIKAN PENGAMAN ANTI-ERROR DI SINI ---
+        const elKasModal = document.getElementById('sbKasModal');
+        const elKasPartner = document.getElementById('sbKasPartner');
+        const elKasOwner = document.getElementById('sbKasOwner');
+        
+        // Hanya ubah text jika elemennya benar-benar ada di HTML
+        if (elKasModal) elKasModal.innerText = formatRupiah(kasModal); 
+        if (elKasPartner) elKasPartner.innerText = formatRupiah(kasPartner); 
+        if (elKasOwner) elKasOwner.innerText = formatRupiah(kasOwner); 
+        
         const elTgl = document.getElementById('tglOps');
         const tglSekarang = (elTgl && elTgl.value) ? elTgl.value : new Date().toISOString().slice(0, 10);
         const pOwnerNow = getRasioHariIni(tglSekarang);
         
         const elTitlePartner = document.getElementById('titleDompetPartner');
         const elTitleOwner = document.getElementById('titleDompetOwner');
-        if(elTitlePartner) elTitlePartner.innerHTML = `Dompet Hak Partner <span style="font-size:0.75rem; color:#fff;">(${100 - pOwnerNow}%)</span>`;
-        if(elTitleOwner) elTitleOwner.innerHTML = `Dompet Hak Anda <span style="font-size:0.75rem; color:#fff;">(${pOwnerNow}%)</span>`;
+        
+        if (elTitlePartner) elTitlePartner.innerHTML = `Dompet Hak Partner <span style="font-size:0.75rem; color:#fff;">(${100 - pOwnerNow}%)</span>`;
+        if (elTitleOwner) elTitleOwner.innerHTML = `Dompet Hak Anda <span style="font-size:0.75rem; color:#fff;">(${pOwnerNow}%)</span>`;
         
         renderMutasiTabKas(activeKasTab); 
     }
