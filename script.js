@@ -136,27 +136,37 @@
         else if (jenis === 'laporan') { if(document.getElementById('viewLaporanBaru')) document.getElementById('viewLaporanBaru').style.display = 'block'; }
     }
     function formatRupiah(angka) { return "Rp " + new Intl.NumberFormat('id-ID').format(angka || 0); }
-    // --- FUNGSI HELPER RASIO BAGI HASIL ---
-function getRasioHariIni(tgl) {
-    if (dbKasMasuk[tgl] && dbKasMasuk[tgl].rasioOwner !== undefined) {
-        return parseFloat(dbKasMasuk[tgl].rasioOwner);
-    }
-    return 60; // Angka default/historis masa lalu jika rasio belum ada
-}
+  // --- FUNGSI HELPER RASIO BAGI HASIL ---
+    function getRasioHariIni(tgl) {
+        // 1. Jika hari ini sudah disetting di database, pakai rasio hari ini
+        if (dbKasMasuk[tgl] && dbKasMasuk[tgl].rasioOwner !== undefined) {
+            return parseFloat(dbKasMasuk[tgl].rasioOwner);
+        }
+        
+        // 2. Jika hari ini kosong, cari riwayat rasio terakhir sebelum tanggal ini
+        const availableDates = Object.keys(dbKasMasuk).filter(k => k < tgl && dbKasMasuk[k].rasioOwner !== undefined).sort();
+        
+        if (availableDates.length > 0) {
+            const tglTerakhir = availableDates[availableDates.length - 1];
+            return parseFloat(dbKasMasuk[tglTerakhir].rasioOwner);
+        }
 
-function updateRasioHarian(valOwner) {
-    let pOwner = parseFloat(valOwner) || 0;
-    if (pOwner > 100) pOwner = 100;
-    if (pOwner < 0) pOwner = 0;
-    let pPartner = 100 - pOwner;
-    
-    document.getElementById('inRasioPartner').value = pPartner;
-    document.getElementById('txtLabelRasioPartner').innerText = pPartner;
-    document.getElementById('txtLabelRasioOwner').innerText = pOwner;
-    
-    updateKalkulasi(); // Update nominal Rupiah seketika
-}
-    // --- LAPORAN BARU ---
+        // 3. Default awal jika belum ada riwayat sama sekali
+        return 60; 
+    }
+
+    function updateRasioHarian(valOwner) {
+        let pOwner = parseFloat(valOwner) || 0;
+        if (pOwner > 100) pOwner = 100;
+        if (pOwner < 0) pOwner = 0;
+        let pPartner = 100 - pOwner;
+        
+        document.getElementById('inRasioPartner').value = pPartner;
+        document.getElementById('txtLabelRasioPartner').innerText = pPartner;
+        document.getElementById('txtLabelRasioOwner').innerText = pOwner;
+        
+        updateKalkulasi(); // Update nominal Rupiah seketika
+    }
     function gantiModeFilterLaporan(mode) {
         if (mode === 'mingguan') { document.getElementById('boxFilterMingguan').style.display = 'grid'; document.getElementById('boxFilterBulanan').style.display = 'none'; } 
         else { document.getElementById('boxFilterMingguan').style.display = 'none'; document.getElementById('boxFilterBulanan').style.display = 'block'; }
@@ -429,16 +439,17 @@ function updateRasioHarian(valOwner) {
 }
 
 function loadKasMasukUI() { 
-    const tgl = document.getElementById('tglOps').value;
-    const kas = dbKasMasuk[tgl] || { cash: 0, qris: 0, rasioOwner: 60 }; 
-    document.getElementById('inCash').value = kas.cash; 
-    document.getElementById('inQris').value = kas.qris; 
-    
-    // Tarik nilai rasio dari database (Default 60 jika kosong)
-    let pOwner = kas.rasioOwner !== undefined ? kas.rasioOwner : 60;
-    document.getElementById('inRasioOwner').value = pOwner;
-    updateRasioHarian(pOwner);
-}
+        const tgl = document.getElementById('tglOps').value;
+        const kas = dbKasMasuk[tgl] || { cash: 0, qris: 0 }; 
+        
+        document.getElementById('inCash').value = kas.cash || 0; 
+        document.getElementById('inQris').value = kas.qris || 0; 
+        
+        // Tarik nilai rasio secara cerdas (otomatis mengikuti tanggal sebelumnya jika hari ini kosong)
+        let pOwner = getRasioHariIni(tgl);
+        document.getElementById('inRasioOwner').value = pOwner;
+        updateRasioHarian(pOwner);
+    }
    // 1. UPDATE KALKULASI HARIAN
     function updateKalkulasi() {
         const tgl = document.getElementById('tglOps').value; if (!dbStok[tgl] || !Array.isArray(dbStok[tgl])) return;
