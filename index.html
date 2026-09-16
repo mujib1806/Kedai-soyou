@@ -510,9 +510,15 @@
                 <h2 style="color: #047857; margin-bottom: 16px;">💰 Ringkasan Dompet & Mutasi</h2>
               <div class="grid-kas-cards">
                     <div class="kas-card kas-card-modal"><div class="kas-title" style="color:#fef08a;">Dompet Modal Belanja</div><div class="kas-val" id="sbKasModal">Rp 0</div><div style="display:flex; gap:6px;"><button onclick="bukaModalKas('Modal Belanja', 'masuk')" class="btn btn-success" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.4);">+ Saldo</button><button onclick="bukaModalKas('Modal Belanja', 'keluar')" class="btn btn-danger" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.4);">- Tarik</button></div></div>
-                    <div class="kas-card kas-card-partner"><div class="kas-title" style="color:#bae6fd;" id="titleDompetPartner">Dompet Hak Partner</div><div class="kas-val" id="sbKasPartner" style="color:#38bdf8;">Rp 0</div><div style="display:flex; gap:6px;"><button onclick="bukaModalKas('Hak Partner', 'masuk')" class="btn btn-success" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">+ Saldo</button><button onclick="bukaModalKas('Hak Partner', 'keluar')" class="btn btn-danger" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">- Tarik</button></div></div>
-                    <div class="kas-card kas-card-owner"><div class="kas-title" style="color:#fde68a;" id="titleDompetOwner">Dompet Hak Anda</div><div class="kas-val" id="sbKasOwner" style="color:#fbbf24;">Rp 0</div><div style="display:flex; gap:6px;"><button onclick="bukaModalKas('Hak Owner', 'masuk')" class="btn btn-success" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">+ Saldo</button><button onclick="bukaModalKas('Hak Owner', 'keluar')" class="btn btn-danger" style="font-size:0.65rem; padding:6px; margin:0; background:rgba(0,0,0,0.3);">- Tarik</button></div></div>
-                </div>
+                    <div class="kas-card kas-card-partner">
+    <div class="kas-title" style="color:#bae6fd;" id="titleDompetPartner">Dompet Hak Partner</div>
+    <!-- ... tombol dan nominal biarkan seperti aslinya ... -->
+</div>
+
+<div class="kas-card kas-card-owner">
+    <div class="kas-title" style="color:#fde68a;" id="titleDompetOwner">Dompet Hak Anda</div>
+    <!-- ... tombol dan nominal biarkan seperti aslinya ... -->
+</div>
                 <hr style="margin: 20px 0; border: none; border-top: 1px dashed var(--border-color);">
                 <div class="tab-container">
                     <button class="tab-btn active" onclick="gantiTabKas('Modal Belanja', this)">📦 Modal Belanja</button>
