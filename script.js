@@ -733,3 +733,73 @@ function loadKasMasukUI() {
     function downloadTemplateMaster() { let csv = 'Nama Dasar;Kemasan;Varian;Modal;Jual\n'; masterProduk.forEach(p => { csv += `${p.nama};${p.kemasan||''};${p.varian||''};${p.modal};${p.jual}\n`; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `Master_Produk_SoYou.csv`; link.click(); }
     
     function importMasterProduk(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { const lines = e.target.result.split('\n'); let itemDiperbarui = 0; let itemBaru = 0; lines.forEach((line, index) => { if (index === 0 || !line.trim()) return; const cols = line.split(';'); if (cols.length >= 5) { const nama = cols[0].trim(); const kemasan = cols[1].trim(); const varian = cols[2].trim(); const modal = parseFloat(cols[3].trim()) || 0; const jual = parseFloat(cols[4].trim()) || 0; const margin = jual - modal; if(nama) { const idx = masterProduk.findIndex(p => p.nama.toLowerCase() === nama.toLowerCase() && (p.kemasan||'').toLowerCase() === kemasan.toLowerCase() && (p.varian||'').toLowerCase() === varian.toLowerCase() ); if(idx !== -1) { masterProduk[idx].modal = modal; masterProduk[idx].jual = jual; masterProduk[idx].margin = margin; itemDiperbarui++; } else { masterProduk.push({ nama, kemasan, varian, modal, jual, margin }); itemBaru++; } } } }); if(itemDiperbarui > 0 || itemBaru > 0) { if(db) { db.collection('appData').doc('masterProduk').set({ list: masterProduk }).then(() => { renderTabelMasterProduk(); alert(`✅ Import Berhasil!\n\n${itemDiperbarui} Produk Diperbarui harganya\n${itemBaru} Produk Baru ditambahkan.`); }); } else { renderTabelMasterProduk(); alert(`✅ Import Lokal Berhasil!\n\n${itemDiperbarui} Produk Diperbarui\n${itemBaru} Produk Baru.`); } } else { alert("⚠️ Format CSV kosong atau tidak terbaca."); } event.target.value = ''; }; reader.readAsText(file); }
+
+    // ==========================================
+    // --- FUNGSI MODAL & TRANSAKSI KAS MANUAL ---
+    // ==========================================
+
+    function bukaModalKas(jenis, tipe) {
+        // Ubah judul modal sesuai tombol yang diklik
+        const textTipe = tipe === 'masuk' ? '🟢 SETOR ke Dompet ' : '🔴 TARIK dari Dompet ';
+        document.getElementById('modalKasJudul').innerText = textTipe + jenis;
+        
+        // Simpan data jenis dan tipe ke dalam form
+        document.getElementById('modalJenisKas').value = jenis;
+        document.getElementById('modalTipeTx').value = tipe;
+        
+        // Kosongkan isian sebelumnya
+        document.getElementById('modalNominalTx').value = '';
+        document.getElementById('modalKetTx').value = '';
+        
+        // Tampilkan modal
+        document.getElementById('modalKas').classList.add('active');
+    }
+
+    function tutupModalKas() {
+        document.getElementById('modalKas').classList.remove('active');
+    }
+
+    function prosesTransaksiKas(e) {
+        e.preventDefault(); // Mencegah halaman refresh
+        
+        const jenis = document.getElementById('modalJenisKas').value;
+        const tipe = document.getElementById('modalTipeTx').value;
+        const nominal = parseFloat(document.getElementById('modalNominalTx').value) || 0;
+        const ket = document.getElementById('modalKetTx').value.trim();
+        const tgl = document.getElementById('tglOps').value;
+
+        if (nominal <= 0) { 
+            alert('Nominal harus lebih dari Rp 0!'); 
+            return; 
+        }
+
+        // Siapkan data log transaksi
+        const prefixKet = tipe === 'masuk' ? 'Masuk Manual: ' : 'Tarik Manual: ';
+        const logData = {
+            tgl: tgl,
+            jenis: jenis,
+            tipe: tipe,
+            nominal: nominal,
+            ket: prefixKet + ket,
+            timestamp: new Date().getTime()
+        };
+
+        // Simpan ke Firebase
+        if (db) {
+            db.collection('logKas').add(logData).then(() => {
+                tutupModalKas();
+                showToast('✅ Transaksi Kas Berhasil Disimpan!');
+                // Catatan: Tidak perlu hitungAkumulasiKasTotal() manual di sini 
+                // karena onSnapshot ('logKas') di atas sudah akan merespons otomatis.
+            }).catch(err => {
+                alert("Gagal menyimpan: " + err.message);
+            });
+        } else {
+            // Fallback jika tidak ada koneksi
+            logData.id = 'local_' + new Date().getTime();
+            dbLogKas.push(logData);
+            tutupModalKas();
+            hitungAkumulasiKasTotal();
+            showToast('✅ Transaksi Lokal Tersimpan!');
+        }
+    }
